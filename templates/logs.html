@@ -1,0 +1,426 @@
+{% extends 'base.html' %}
+
+{% block title %}System Logs - AI Defense System{% endblock %}
+
+{% block extra_css %}
+<style>
+    .log-entry {
+        transition: background-color 0.3s;
+    }
+    .log-entry:hover {
+        background-color: rgba(0,0,0,0.05);
+    }
+    .log-entry.new {
+        animation: newLog 2s ease-in-out;
+    }
+    @keyframes newLog {
+        0% { background-color: rgba(255,255,0,0.2); }
+        100% { background-color: transparent; }
+    }
+    .log-level {
+        width: 80px;
+    }
+    .log-timestamp {
+        width: 180px;
+    }
+    .log-component {
+        width: 120px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="mb-0">System Logs</h1>
+            <p class="text-muted">Monitor and analyze system activities</p>
+        </div>
+        <div class="btn-group">
+            <button class="btn btn-outline-primary" id="toggleAutoRefresh">
+                <i class="fas fa-sync-alt"></i> Auto Refresh
+            </button>
+            <button class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#exportModal">
+                <i class="fas fa-download"></i> Export
+            </button>
+        </div>
+    </div>
+
+    <!-- Quick Stats -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-danger h-100 py-2">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col">
+                            <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">Error Logs</div>
+                            <div class="h5 mb-0 font-weight-bold">{{ error_count|default:"12" }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-exclamation-circle fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning h-100 py-2">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Warning Logs</div>
+                            <div class="h5 mb-0 font-weight-bold">{{ warning_count|default:"45" }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-exclamation-triangle fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-info h-100 py-2">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Info Logs</div>
+                            <div class="h5 mb-0 font-weight-bold">{{ info_count|default:"156" }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-info-circle fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success h-100 py-2">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Debug Logs</div>
+                            <div class="h5 mb-0 font-weight-bold">{{ debug_count|default:"89" }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-bug fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form class="row g-3" id="logFilterForm">
+                <div class="col-md-3">
+                    <label class="form-label">Log Level</label>
+                    <select class="form-select" id="logLevel" multiple>
+                        <option value="error" selected>Error</option>
+                        <option value="warning" selected>Warning</option>
+                        <option value="info" selected>Info</option>
+                        <option value="debug">Debug</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Component</label>
+                    <select class="form-select" id="component" multiple>
+                        <option value="ai" selected>AI Models</option>
+                        <option value="network" selected>Network</option>
+                        <option value="security" selected>Security</option>
+                        <option value="system" selected>System</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Date Range</label>
+                    <div class="input-group">
+                        <input type="datetime-local" class="form-control" id="startDate">
+                        <span class="input-group-text">to</span>
+                        <input type="datetime-local" class="form-control" id="endDate">
+                    </div>
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <div class="btn-group w-100">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-filter"></i> Filter
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary" id="clearFilters">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Logs Table -->
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover" id="logsTable">
+                    <thead>
+                        <tr>
+                            <th class="log-timestamp">
+                                <div class="d-flex align-items-center">
+                                    Timestamp
+                                    <button class="btn btn-link btn-sm p-0 ms-2">
+                                        <i class="fas fa-sort"></i>
+                                    </button>
+                                </div>
+                            </th>
+                            <th class="log-level">
+                                <div class="d-flex align-items-center">
+                                    Level
+                                    <button class="btn btn-link btn-sm p-0 ms-2">
+                                        <i class="fas fa-sort"></i>
+                                    </button>
+                                </div>
+                            </th>
+                            <th class="log-component">
+                                <div class="d-flex align-items-center">
+                                    Component
+                                    <button class="btn btn-link btn-sm p-0 ms-2">
+                                        <i class="fas fa-sort"></i>
+                                    </button>
+                                </div>
+                            </th>
+                            <th>Message</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for log in logs %}
+                        <tr class="log-entry">
+                            <td class="log-timestamp">{{ log.timestamp }}</td>
+                            <td class="log-level">
+                                <span class="badge {% if log.level == 'ERROR' %}bg-danger{% elif log.level == 'WARNING' %}bg-warning{% elif log.level == 'INFO' %}bg-info{% else %}bg-secondary{% endif %}">
+                                    {{ log.level }}
+                                </span>
+                            </td>
+                            <td class="log-component">
+                                <span class="badge bg-primary">{{ log.component }}</span>
+                            </td>
+                            <td>{{ log.message }}</td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#logDetailModal" data-log-id="{{ log.id }}">
+                                    <i class="fas fa-search"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            <nav class="mt-3">
+                <ul class="pagination justify-content-center">
+                    <li class="page-item disabled">
+                        <a class="page-link" href="#" tabindex="-1">Previous</a>
+                    </li>
+                    <li class="page-item active"><a class="page-link" href="#">1</a></li>
+                    <li class="page-item"><a class="page-link" href="#">2</a></li>
+                    <li class="page-item"><a class="page-link" href="#">3</a></li>
+                    <li class="page-item">
+                        <a class="page-link" href="#">Next</a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+    </div>
+</div>
+
+<!-- Log Detail Modal -->
+<div class="modal fade" id="logDetailModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Log Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-4">
+                    <h6>Event Information</h6>
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <tr>
+                                <th width="150">Timestamp:</th>
+                                <td>2024-12-17 01:00:00</td>
+                            </tr>
+                            <tr>
+                                <th>Level:</th>
+                                <td><span class="badge bg-danger">ERROR</span></td>
+                            </tr>
+                            <tr>
+                                <th>Component:</th>
+                                <td><span class="badge bg-primary">AI Model</span></td>
+                            </tr>
+                            <tr>
+                                <th>Source:</th>
+                                <td>malware_detection.py</td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <h6>Message</h6>
+                    <pre class="bg-light p-3">Failed to initialize malware detection model: InvalidModelConfiguration</pre>
+                </div>
+
+                <div class="mb-4">
+                    <h6>Stack Trace</h6>
+                    <pre class="bg-light p-3" style="max-height: 200px; overflow-y: auto;">
+Traceback (most recent call last):
+  File "malware_detection.py", line 145, in initialize_model
+    model = load_model_configuration('config.json')
+  File "model_loader.py", line 67, in load_model_configuration
+    raise InvalidModelConfiguration("Missing required parameters")
+InvalidModelConfiguration: Missing required parameters
+                    </pre>
+                </div>
+
+                <div class="mb-4">
+                    <h6>Additional Context</h6>
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <tr>
+                                <th width="150">User:</th>
+                                <td>system</td>
+                            </tr>
+                            <tr>
+                                <th>Environment:</th>
+                                <td>production</td>
+                            </tr>
+                            <tr>
+                                <th>Related Events:</th>
+                                <td>
+                                    <a href="#">Event #1234</a>,
+                                    <a href="#">Event #1235</a>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary">Download Details</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Export Modal -->
+<div class="modal fade" id="exportModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Export Logs</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form>
+                    <div class="mb-3">
+                        <label class="form-label">Export Format</label>
+                        <select class="form-select">
+                            <option value="csv">CSV</option>
+                            <option value="json">JSON</option>
+                            <option value="txt">Plain Text</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Time Range</label>
+                        <select class="form-select">
+                            <option>Current View</option>
+                            <option>Last Hour</option>
+                            <option>Last 24 Hours</option>
+                            <option>Last 7 Days</option>
+                            <option>Custom Range</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="includeMetadata" checked>
+                            <label class="form-check-label" for="includeMetadata">
+                                Include Metadata
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="includeStackTrace" checked>
+                            <label class="form-check-label" for="includeStackTrace">
+                                Include Stack Traces
+                            </label>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary">Export</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize tooltips
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl)
+    });
+
+    // Auto-refresh functionality
+    let autoRefreshEnabled = false;
+    let refreshInterval;
+
+    function toggleAutoRefresh() {
+        const button = document.getElementById('toggleAutoRefresh');
+        autoRefreshEnabled = !autoRefreshEnabled;
+        
+        if (autoRefreshEnabled) {
+            button.classList.remove('btn-outline-primary');
+            button.classList.add('btn-primary');
+            refreshInterval = setInterval(refreshLogs, 5000);
+        } else {
+            button.classList.remove('btn-primary');
+            button.classList.add('btn-outline-primary');
+            clearInterval(refreshInterval);
+        }
+    }
+
+    function refreshLogs() {
+        // In a real implementation, this would make an API call to fetch new logs
+        console.log('Refreshing logs...');
+    }
+
+    document.getElementById('toggleAutoRefresh').addEventListener('click', toggleAutoRefresh);
+
+    // Clear filters
+    document.getElementById('clearFilters').addEventListener('click', function() {
+        document.getElementById('logFilterForm').reset();
+    });
+
+    // Initialize date inputs with current time range
+    const now = new Date();
+    const yesterday = new Date(now);
+    yesterday.setDate(yesterday.getDate() - 1);
+    
+    document.getElementById('startDate').value = yesterday.toISOString().slice(0, 16);
+    document.getElementById('endDate').value = now.toISOString().slice(0, 16);
+
+    // Log detail modal
+    const logDetailModal = document.getElementById('logDetailModal');
+    logDetailModal.addEventListener('show.bs.modal', function (event) {
+        const button = event.relatedTarget;
+        const logId = button.getAttribute('data-log-id');
+        // In a real implementation, this would fetch the log details using the logId
+        console.log('Fetching details for log:', logId);
+    });
+});
+</script>
+{% endblock %}

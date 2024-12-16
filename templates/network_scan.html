@@ -1,0 +1,231 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Network Scan - AI Defense System{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Scan Control -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title mb-4">Network Scan Configuration</h5>
+                    <form>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">IP Range</label>
+                                <div class="input-group">
+                                    <input type="text" class="form-control" placeholder="192.168.1.1" value="192.168.1.1">
+                                    <span class="input-group-text">to</span>
+                                    <input type="text" class="form-control" placeholder="192.168.1.255" value="192.168.1.255">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Scan Type</label>
+                                <select class="form-select">
+                                    <option value="quick">Quick Scan</option>
+                                    <option value="full">Full Scan</option>
+                                    <option value="custom">Custom Scan</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Port Range</label>
+                                <div class="input-group">
+                                    <input type="number" class="form-control" placeholder="1" value="1">
+                                    <span class="input-group-text">to</span>
+                                    <input type="number" class="form-control" placeholder="1024" value="1024">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Scan Speed</label>
+                                <select class="form-select">
+                                    <option value="slow">Slow (Stealthy)</option>
+                                    <option value="normal" selected>Normal</option>
+                                    <option value="fast">Fast (Aggressive)</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-12">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-play me-2"></i>Start Scan
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary ms-2">
+                                    <i class="fas fa-save me-2"></i>Save Configuration
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title mb-4">Scan Status</h5>
+                    <div class="text-center mb-4">
+                        <div class="progress-circle mx-auto">
+                            <div class="progress-circle-inner">
+                                <span class="progress-value">45%</span>
+                                <span class="progress-text">Complete</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between mb-1">
+                            <span>Hosts Scanned</span>
+                            <span>127/255</span>
+                        </div>
+                        <div class="progress" style="height: 5px;">
+                            <div class="progress-bar" role="progressbar" style="width: 45%"></div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between mb-1">
+                            <span>Time Elapsed</span>
+                            <span>02:45</span>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between mb-1">
+                            <span>Estimated Time Remaining</span>
+                            <span>03:15</span>
+                        </div>
+                    </div>
+                    <button class="btn btn-danger w-100">
+                        <i class="fas fa-stop me-2"></i>Stop Scan
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scan Results -->
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Scan Results</h5>
+            <div class="btn-group">
+                <button class="btn btn-outline-secondary btn-sm">
+                    <i class="fas fa-download me-2"></i>Export
+                </button>
+                <button class="btn btn-outline-secondary btn-sm">
+                    <i class="fas fa-filter me-2"></i>Filter
+                </button>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>Host</th>
+                            <th>Status</th>
+                            <th>Open Ports</th>
+                            <th>Services</th>
+                            <th>OS</th>
+                            <th>Risk Level</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for host in scan_results %}
+                        <tr>
+                            <td>
+                                <div>
+                                    <strong>{{ host.ip }}</strong>
+                                    <small class="d-block text-muted">{{ host.hostname }}</small>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="badge bg-{{ host.status_class }}">
+                                    {{ host.status }}
+                                </span>
+                            </td>
+                            <td>{{ host.open_ports }}</td>
+                            <td>{{ host.services }}</td>
+                            <td>{{ host.os }}</td>
+                            <td>
+                                <span class="badge bg-{{ host.risk_class }}">
+                                    {{ host.risk_level }}
+                                </span>
+                            </td>
+                            <td>
+                                <div class="btn-group">
+                                    <button class="btn btn-sm btn-outline-primary" data-bs-toggle="tooltip" 
+                                            title="View Details">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-warning" data-bs-toggle="tooltip" 
+                                            title="Block Host">
+                                        <i class="fas fa-ban"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_css %}
+<style>
+.progress-circle {
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    background: conic-gradient(#007bff 45%, #e9ecef 0);
+    position: relative;
+}
+
+.progress-circle-inner {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+}
+
+.progress-value {
+    font-size: 24px;
+    font-weight: bold;
+    display: block;
+}
+
+.progress-text {
+    font-size: 14px;
+    color: #6c757d;
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize tooltips
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    tooltipTriggerList.map(function(tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+
+    // Handle scan start
+    document.querySelector('form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        showNotification('Network scan started...', 'info');
+    });
+
+    // Handle scan stop
+    document.querySelector('.btn-danger').addEventListener('click', function() {
+        if (confirm('Are you sure you want to stop the current scan?')) {
+            showNotification('Scan stopped successfully', 'warning');
+        }
+    });
+});
+</script>
+{% endblock %}
+{% endblock %}

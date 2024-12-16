@@ -1,0 +1,476 @@
+{% extends 'base.html' %}
+
+{% block title %}Threats - AI Defense System{% endblock %}
+
+{% block extra_css %}
+<style>
+    .threat-card {
+        transition: transform 0.2s, box-shadow 0.2s;
+        border: none;
+        border-radius: 15px;
+    }
+    .threat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+    .status-card {
+        border-radius: 15px;
+        border: none;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        overflow: hidden;
+    }
+    .status-card.danger {
+        background: linear-gradient(45deg, #dc3545, #f86384);
+        color: white;
+    }
+    .status-card.warning {
+        background: linear-gradient(45deg, #ffc107, #fd7e14);
+        color: white;
+    }
+    .status-card.success {
+        background: linear-gradient(45deg, #28a745, #20c997);
+        color: white;
+    }
+    .status-card.info {
+        background: linear-gradient(45deg, #17a2b8, #36b9cc);
+        color: white;
+    }
+    .threat-stats {
+        background: rgba(255,255,255,0.1);
+        border-radius: 8px;
+        padding: 10px;
+        margin-top: 10px;
+    }
+    .threat-action-btn {
+        width: 36px;
+        height: 36px;
+        padding: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 8px;
+        margin: 0 2px;
+        transition: all 0.2s;
+    }
+    .threat-action-btn:hover {
+        transform: scale(1.1);
+    }
+    .threat-table th {
+        background-color: #f8f9fa;
+        border-bottom: 2px solid #dee2e6;
+        white-space: nowrap;
+    }
+    .threat-table td {
+        vertical-align: middle;
+    }
+    .threat-source {
+        max-width: 200px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    .severity-badge {
+        font-size: 0.85rem;
+        padding: 0.35em 0.65em;
+        border-radius: 10px;
+    }
+    .severity-high {
+        background-color: #dc3545;
+        color: white;
+    }
+    .severity-medium {
+        background-color: #ffc107;
+        color: black;
+    }
+    .severity-low {
+        background-color: #17a2b8;
+        color: white;
+    }
+    .threat-progress {
+        height: 4px;
+        margin-top: 8px;
+        background-color: rgba(255,255,255,0.2);
+    }
+    .threat-progress .progress-bar {
+        border-radius: 4px;
+    }
+    .live-indicator {
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background-color: #28a745;
+        margin-right: 6px;
+        animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+        0% { opacity: 1; }
+        50% { opacity: 0.5; }
+        100% { opacity: 1; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="mb-1">Threat Detection</h1>
+            <p class="text-muted mb-0">
+                <span class="live-indicator"></span>
+                Monitoring system security in real-time
+            </p>
+        </div>
+        <div class="d-flex gap-2">
+            <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#filterModal">
+                <i class="fas fa-filter me-2"></i>Filter Threats
+            </button>
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#scanModal">
+                <i class="fas fa-radar me-2"></i>New Scan
+            </button>
+        </div>
+    </div>
+
+    <!-- Threat Overview Cards -->
+    <div class="row g-4 mb-4">
+        <div class="col-xl-3 col-md-6">
+            <div class="status-card danger h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h5 class="card-title mb-0">Active Threats</h5>
+                            <h2 class="mt-3 mb-0">{{ active_threats|default:"3" }}</h2>
+                        </div>
+                        <div class="fs-1">
+                            <i class="fas fa-shield-virus"></i>
+                        </div>
+                    </div>
+                    <div class="threat-stats">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span>Critical Level</span>
+                            <span class="badge bg-white text-danger">2 High</span>
+                        </div>
+                        <div class="threat-progress">
+                            <div class="progress-bar bg-white" style="width: 75%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="status-card warning h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h5 class="card-title mb-0">Under Investigation</h5>
+                            <h2 class="mt-3 mb-0">{{ investigating_threats|default:"2" }}</h2>
+                        </div>
+                        <div class="fs-1">
+                            <i class="fas fa-microscope"></i>
+                        </div>
+                    </div>
+                    <div class="threat-stats">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span>Avg. Time</span>
+                            <span class="badge bg-white text-warning">45 min</span>
+                        </div>
+                        <div class="threat-progress">
+                            <div class="progress-bar bg-white" style="width: 60%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="status-card success h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h5 class="card-title mb-0">Resolved Today</h5>
+                            <h2 class="mt-3 mb-0">{{ resolved_threats|default:"5" }}</h2>
+                        </div>
+                        <div class="fs-1">
+                            <i class="fas fa-check-shield"></i>
+                        </div>
+                    </div>
+                    <div class="threat-stats">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span>Success Rate</span>
+                            <span class="badge bg-white text-success">100%</span>
+                        </div>
+                        <div class="threat-progress">
+                            <div class="progress-bar bg-white" style="width: 100%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="status-card info h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h5 class="card-title mb-0">Detection Rate</h5>
+                            <h2 class="mt-3 mb-0">{{ detection_rate|default:"98" }}%</h2>
+                        </div>
+                        <div class="fs-1">
+                            <i class="fas fa-chart-line"></i>
+                        </div>
+                    </div>
+                    <div class="threat-stats">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span>False Positives</span>
+                            <span class="badge bg-white text-info">0.5%</span>
+                        </div>
+                        <div class="threat-progress">
+                            <div class="progress-bar bg-white" style="width: 98%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Threat List -->
+    <div class="card threat-card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover threat-table">
+                    <thead>
+                        <tr>
+                            <th>Threat ID</th>
+                            <th>Type</th>
+                            <th>Source</th>
+                            <th>Target</th>
+                            <th>Severity</th>
+                            <th>Status</th>
+                            <th>Detected</th>
+                            <th>Progress</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for threat in threats %}
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <i class="fas fa-bug text-danger me-2"></i>
+                                    <div>
+                                        <strong>{{ threat.id|default:"THR-001" }}</strong>
+                                        <div class="small text-muted">{{ threat.type }}</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td><span class="badge bg-danger">{{ threat.type }}</span></td>
+                            <td class="threat-source" title="{{ threat.source|default:"192.168.1.100" }}">{{ threat.source|default:"192.168.1.100" }}</td>
+                            <td class="threat-source" title="{{ threat.target|default:"/var/www/html" }}">{{ threat.target|default:"/var/www/html" }}</td>
+                            <td><span class="badge severity-{{ threat.severity|default:"high" }}">{{ threat.severity|default:"High" }}</span></td>
+                            <td><span class="badge bg-{{ threat.status|default:"danger" }}">{{ threat.status|default:"Active" }}</span></td>
+                            <td>
+                                <div>{{ threat.detected|default:"2024-12-17 01:00" }}</div>
+                                <small class="text-muted">{{ threat.detected|default:"25 mins ago" }}</small>
+                            </td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="progress flex-grow-1" style="height: 6px;">
+                                        <div class="progress-bar bg-{{ threat.status|default:"danger" }}" style="width: {{ threat.progress|default:"75%" }}"></div>
+                                    </div>
+                                    <span class="ms-2 small">{{ threat.progress|default:"75%" }}</span>
+                                </div>
+                            </td>
+                            <td>
+                                <button class="btn threat-action-btn btn-outline-primary" data-bs-toggle="tooltip" title="Investigate">
+                                    <i class="fas fa-search"></i>
+                                </button>
+                                <button class="btn threat-action-btn btn-outline-danger" data-bs-toggle="tooltip" title="Block">
+                                    <i class="fas fa-ban"></i>
+                                </button>
+                                <button class="btn threat-action-btn btn-outline-info" data-bs-toggle="tooltip" title="Details">
+                                    <i class="fas fa-info-circle"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filter Modal -->
+<div class="modal fade" id="filterModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Filter Threats</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form>
+                    <div class="mb-3">
+                        <label class="form-label">Severity</label>
+                        <select class="form-select" multiple>
+                            <option value="high" selected>High</option>
+                            <option value="medium" selected>Medium</option>
+                            <option value="low" selected>Low</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Status</label>
+                        <select class="form-select" multiple>
+                            <option value="active" selected>Active</option>
+                            <option value="investigating" selected>Investigating</option>
+                            <option value="resolved">Resolved</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Time Range</label>
+                        <select class="form-select">
+                            <option>Last Hour</option>
+                            <option selected>Last 24 Hours</option>
+                            <option>Last 7 Days</option>
+                            <option>Last 30 Days</option>
+                            <option>Custom Range</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Threat Type</label>
+                        <select class="form-select" multiple>
+                            <option value="malware" selected>Malware</option>
+                            <option value="intrusion" selected>Intrusion</option>
+                            <option value="dos" selected>DoS Attack</option>
+                            <option value="phishing" selected>Phishing</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary">Apply Filters</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Scan Modal -->
+<div class="modal fade" id="scanModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">New Security Scan</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Scan Type</label>
+                            <select class="form-select">
+                                <option value="quick">Quick Scan</option>
+                                <option value="full">Full System Scan</option>
+                                <option value="custom">Custom Scan</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Priority</label>
+                            <select class="form-select">
+                                <option value="high">High</option>
+                                <option value="normal" selected>Normal</option>
+                                <option value="low">Low</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Target Areas</label>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="checkNetwork" checked>
+                                    <label class="form-check-label" for="checkNetwork">Network</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="checkFiles" checked>
+                                    <label class="form-check-label" for="checkFiles">File System</label>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="checkMemory" checked>
+                                    <label class="form-check-label" for="checkMemory">Memory</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="checkRegistry">
+                                    <label class="form-check-label" for="checkRegistry">Registry</label>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="checkProcesses">
+                                    <label class="form-check-label" for="checkProcesses">Processes</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="checkStartup">
+                                    <label class="form-check-label" for="checkStartup">Startup Items</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Schedule</label>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="scanSchedule" id="scanNow" checked>
+                                    <label class="form-check-label" for="scanNow">
+                                        Start Immediately
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="scanSchedule" id="scanScheduled">
+                                    <label class="form-check-label" for="scanScheduled">
+                                        Schedule for Later
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="autoAction" checked>
+                            <label class="form-check-label" for="autoAction">Take Automatic Action on Threats</label>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary">
+                    <i class="fas fa-play me-2"></i>Start Scan
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize tooltips
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl)
+    });
+
+    // Initialize multiple select
+    var selects = document.querySelectorAll('select[multiple]');
+    selects.forEach(function(select) {
+        select.size = select.options.length;
+    });
+});
+</script>
+{% endblock %}

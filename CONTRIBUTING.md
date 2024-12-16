@@ -1,6 +1,6 @@
-# Contributing to AI Defence System
+# Contributing to AI Defense System
 
-We love your input! We want to make contributing to AI Defence System as easy and transparent as possible, whether it's:
+We love your input! We want to make contributing to AI Defense System as easy and transparent as possible, whether it's:
 
 - Reporting a bug
 - Discussing the current state of the code
@@ -8,11 +8,9 @@ We love your input! We want to make contributing to AI Defence System as easy an
 - Proposing new features
 - Becoming a maintainer
 
-## We Develop with Github
-We use GitHub to host code, to track issues and feature requests, as well as accept pull requests.
+## Development Process
 
-## We Use [Github Flow](https://guides.github.com/introduction/flow/index.html)
-Pull requests are the best way to propose changes to the codebase. We actively welcome your pull requests:
+We use GitHub to host code, to track issues and feature requests, as well as accept pull requests.
 
 1. Fork the repo and create your branch from `main`.
 2. If you've added code that should be tested, add tests.
@@ -21,13 +19,21 @@ Pull requests are the best way to propose changes to the codebase. We actively w
 5. Make sure your code lints.
 6. Issue that pull request!
 
-## Any contributions you make will be under the MIT Software License
+## Pull Request Process
+
+1. Update the README.md with details of changes to the interface, if applicable.
+2. Update the requirements.txt if you've added any dependencies.
+3. The PR will be merged once you have the sign-off of two other developers.
+
+## Any Contributions You Make Will Be Under the MIT Software License
+
 In short, when you submit code changes, your submissions are understood to be under the same [MIT License](http://choosealicense.com/licenses/mit/) that covers the project. Feel free to contact the maintainers if that's a concern.
 
-## Report bugs using Github's [issue tracker](https://github.com/yourusername/ai-defence-system/issues)
-We use GitHub issues to track public bugs. Report a bug by [opening a new issue](https://github.com/yourusername/ai-defence-system/issues/new); it's that easy!
+## Report Bugs Using GitHub's [Issue Tracker](https://github.com/yourusername/ai-defense-system/issues)
 
-## Write bug reports with detail, background, and sample code
+We use GitHub issues to track public bugs. Report a bug by [opening a new issue](https://github.com/yourusername/ai-defense-system/issues/new).
+
+## Write Bug Reports with Detail, Background, and Sample Code
 
 **Great Bug Reports** tend to have:
 
@@ -39,8 +45,13 @@ We use GitHub issues to track public bugs. Report a bug by [opening a new issue]
 - What actually happens
 - Notes (possibly including why you think this might be happening, or stuff you tried that didn't work)
 
-## License
-By contributing, you agree that your contributions will be licensed under its MIT License.
+## Use a Consistent Coding Style
 
-## References
-This document was adapted from the open-source contribution guidelines for [Facebook's Draft](https://github.com/facebook/draft-js/blob/a9316a723f9e918afde44dea68b5f9f39b7d9b00/CONTRIBUTING.md).
+* Use 4 spaces for indentation rather than tabs
+* Use snake_case for Python files and functions
+* Keep lines under 100 characters
+* Use meaningful variable names
+
+## License
+
+By contributing, you agree that your contributions will be licensed under its MIT License.

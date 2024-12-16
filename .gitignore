@@ -4,7 +4,6 @@ __pycache__/
 *$py.class
 *.so
 .Python
-env/
 build/
 develop-eggs/
 dist/
@@ -21,9 +20,18 @@ wheels/
 .installed.cfg
 *.egg
 
+# Django
+*.log
+*.pot
+*.pyc
+db.sqlite3
+media/
+staticfiles/
+
 # Virtual Environment
 venv/
 ENV/
+env/
 .env
 
 # IDE
@@ -31,29 +39,34 @@ ENV/
 .vscode/
 *.swp
 *.swo
-
-# Database
-*.db
-*.sqlite3
-
-# Logs
-*.log
-logs/
+.DS_Store
 
 # Local development settings
-instance/
-.env.local
-.env.*.local
+local_settings.py
 
-# System Files
-.DS_Store
-Thumbs.db
+# Coverage reports
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+*.cover
 
-# Model files and large data
-models/
-data/
-uploads/
+# Celery
+celerybeat-schedule
+celerybeat.pid
 
-# Node modules (if any)
+# Node
 node_modules/
-package-lock.json
+npm-debug.log
+
+# Compiled files
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+
+# Backup files
+*.bak
+*~
+*.swp
