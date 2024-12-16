@@ -1,0 +1,120 @@
+<!-- System Monitoring Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+    <!-- System Resources Monitor -->
+    <div class="bg-white rounded-lg shadow-lg p-6">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-xl font-bold flex items-center">
+                <i class="fas fa-microchip mr-2 text-blue-500"></i>
+                System Resources
+            </h2>
+            <div class="flex space-x-2">
+                <button id="systemResourcesToggle" 
+                        onclick="toggleMonitoring('systemResources')" 
+                        class="px-4 py-2 rounded-lg bg-green-500 text-white hover:bg-green-600 transition-colors">
+                    <i class="fas fa-play mr-1"></i>
+                    <span>Start</span>
+                </button>
+                <span id="systemResourcesStatus" class="px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-sm">Stopped</span>
+            </div>
+        </div>
+        <div class="space-y-6">
+            <!-- CPU Usage -->
+            <div>
+                <div class="flex justify-between items-center mb-2">
+                    <span class="text-gray-600">CPU Usage</span>
+                    <span id="cpuValue" class="text-sm font-medium">0%</span>
+                </div>
+                <div class="h-3 bg-gray-200 rounded">
+                    <div id="cpuBar" class="h-3 bg-blue-500 rounded transition-all duration-500" style="width: 0%"></div>
+                </div>
+            </div>
+            <!-- Memory Usage -->
+            <div>
+                <div class="flex justify-between items-center mb-2">
+                    <span class="text-gray-600">Memory Usage</span>
+                    <span id="memoryValue" class="text-sm font-medium">0%</span>
+                </div>
+                <div class="h-3 bg-gray-200 rounded">
+                    <div id="memoryBar" class="h-3 bg-green-500 rounded transition-all duration-500" style="width: 0%"></div>
+                </div>
+            </div>
+            <!-- Disk Usage -->
+            <div>
+                <div class="flex justify-between items-center mb-2">
+                    <span class="text-gray-600">Disk Usage</span>
+                    <span id="diskValue" class="text-sm font-medium">0%</span>
+                </div>
+                <div class="h-3 bg-gray-200 rounded">
+                    <div id="diskBar" class="h-3 bg-purple-500 rounded transition-all duration-500" style="width: 0%"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Network Monitor -->
+    <div class="bg-white rounded-lg shadow-lg p-6">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-xl font-bold flex items-center">
+                <i class="fas fa-network-wired mr-2 text-indigo-500"></i>
+                Network Activity
+            </h2>
+            <div class="flex space-x-2">
+                <button id="networkMonitorToggle" 
+                        onclick="toggleMonitoring('network')" 
+                        class="px-4 py-2 rounded-lg bg-green-500 text-white hover:bg-green-600 transition-colors">
+                    <i class="fas fa-play mr-1"></i>
+                    <span>Start</span>
+                </button>
+                <span id="networkStatus" class="px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-sm">Stopped</span>
+            </div>
+        </div>
+        <div id="networkChart" class="h-64">
+            <!-- Network chart will be rendered here -->
+        </div>
+        <div class="grid grid-cols-2 gap-4 mt-4">
+            <div class="p-4 bg-blue-50 rounded-lg">
+                <div class="text-sm text-gray-600">Upload Speed</div>
+                <div id="uploadSpeed" class="text-xl font-bold text-blue-600">0 MB/s</div>
+            </div>
+            <div class="p-4 bg-green-50 rounded-lg">
+                <div class="text-sm text-gray-600">Download Speed</div>
+                <div id="downloadSpeed" class="text-xl font-bold text-green-600">0 MB/s</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Process Monitor -->
+<div class="bg-white rounded-lg shadow-lg p-6 mb-6">
+    <div class="flex justify-between items-center mb-4">
+        <h2 class="text-xl font-bold flex items-center">
+            <i class="fas fa-tasks mr-2 text-yellow-500"></i>
+            Process Monitor
+        </h2>
+        <div class="flex space-x-2">
+            <button id="processMonitorToggle" 
+                    onclick="toggleMonitoring('processes')" 
+                    class="px-4 py-2 rounded-lg bg-green-500 text-white hover:bg-green-600 transition-colors">
+                <i class="fas fa-play mr-1"></i>
+                <span>Start</span>
+            </button>
+            <span id="processStatus" class="px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-sm">Stopped</span>
+        </div>
+    </div>
+    <div class="overflow-x-auto">
+        <table class="min-w-full">
+            <thead>
+                <tr class="border-b">
+                    <th class="text-left py-2">PID</th>
+                    <th class="text-left py-2">Name</th>
+                    <th class="text-left py-2">CPU %</th>
+                    <th class="text-left py-2">Memory %</th>
+                    <th class="text-left py-2">Status</th>
+                </tr>
+            </thead>
+            <tbody id="processTable">
+                <!-- Process entries will be populated here -->
+            </tbody>
+        </table>
+    </div>
+</div>

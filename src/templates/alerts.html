@@ -1,0 +1,271 @@
+{% extends "base.html" %}
+
+{% block title %}Security Alerts - AI Defense System{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4">
+    <div class="d-flex justify-content-between align-items-center mt-4 mb-4">
+        <h1>Security Alerts</h1>
+        <div>
+            <button class="btn btn-primary" onclick="markAllRead()">
+                <i class="fas fa-check-double me-2"></i>Mark All as Read
+            </button>
+            <button class="btn btn-outline-primary" onclick="refreshAlerts()">
+                <i class="fas fa-sync-alt me-2"></i>Refresh
+            </button>
+        </div>
+    </div>
+
+    <!-- Alert Filters -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label">Severity</label>
+                    <select class="form-select" id="severityFilter">
+                        <option value="">All Severities</option>
+                        <option value="high">High</option>
+                        <option value="medium">Medium</option>
+                        <option value="low">Low</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Type</label>
+                    <select class="form-select" id="typeFilter">
+                        <option value="">All Types</option>
+                        <option value="malware">Malware</option>
+                        <option value="deepfake">Deepfake</option>
+                        <option value="suspicious">Suspicious Activity</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Status</label>
+                    <select class="form-select" id="statusFilter">
+                        <option value="">All Statuses</option>
+                        <option value="new">New</option>
+                        <option value="investigating">Investigating</option>
+                        <option value="resolved">Resolved</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Time Range</label>
+                    <select class="form-select" id="timeFilter">
+                        <option value="24h">Last 24 Hours</option>
+                        <option value="7d">Last 7 Days</option>
+                        <option value="30d">Last 30 Days</option>
+                        <option value="all">All Time</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alerts List -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body p-0">
+                    <div class="list-group list-group-flush" id="alertsList">
+                        <!-- Alerts will be populated here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alert Details Modal -->
+    <div class="modal fade" id="alertDetailsModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Alert Details</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="alertDetailsContent">
+                    <!-- Alert details will be populated here -->
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-success" onclick="resolveAlert(currentAlertId)">
+                        Mark as Resolved
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let currentAlertId = null;
+
+function refreshAlerts() {
+    const severity = document.getElementById('severityFilter').value;
+    const type = document.getElementById('typeFilter').value;
+    const status = document.getElementById('statusFilter').value;
+    const timeRange = document.getElementById('timeFilter').value;
+
+    fetch('/api/alerts?' + new URLSearchParams({
+        severity: severity,
+        type: type,
+        status: status,
+        timeRange: timeRange
+    }))
+    .then(response => response.json())
+    .then(data => {
+        const alertsList = document.getElementById('alertsList');
+        alertsList.innerHTML = '';
+
+        data.alerts.forEach(alert => {
+            const alertElement = document.createElement('div');
+            alertElement.className = `list-group-item list-group-item-action ${alert.read ? 'read' : ''}`;
+            alertElement.innerHTML = `
+                <div class="d-flex w-100 justify-content-between align-items-center">
+                    <div>
+                        <div class="d-flex align-items-center">
+                            <span class="badge bg-${getSeverityClass(alert.severity)} me-2">${alert.severity}</span>
+                            <h5 class="mb-1">${alert.title}</h5>
+                        </div>
+                        <p class="mb-1">${alert.description}</p>
+                        <small class="text-muted">
+                            <i class="fas fa-clock me-1"></i>${formatDate(alert.timestamp)}
+                            <span class="ms-2"><i class="fas fa-tag me-1"></i>${alert.type}</span>
+                        </small>
+                    </div>
+                    <div class="text-end">
+                        <span class="badge bg-${getStatusClass(alert.status)} mb-2 d-block">${alert.status}</span>
+                        <button class="btn btn-sm btn-primary" onclick="viewAlertDetails('${alert.id}')">
+                            View Details
+                        </button>
+                    </div>
+                </div>
+            `;
+            alertsList.appendChild(alertElement);
+        });
+    })
+    .catch(error => console.error('Error fetching alerts:', error));
+}
+
+function viewAlertDetails(alertId) {
+    currentAlertId = alertId;
+    fetch(`/api/alerts/${alertId}`)
+        .then(response => response.json())
+        .then(alert => {
+            const content = document.getElementById('alertDetailsContent');
+            content.innerHTML = `
+                <div class="alert alert-${getSeverityClass(alert.severity)} mb-4">
+                    <h4 class="alert-heading">${alert.title}</h4>
+                    <p>${alert.description}</p>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <h6>Alert Details</h6>
+                        <ul class="list-unstyled">
+                            <li><strong>Type:</strong> ${alert.type}</li>
+                            <li><strong>Severity:</strong> ${alert.severity}</li>
+                            <li><strong>Status:</strong> ${alert.status}</li>
+                            <li><strong>Detected:</strong> ${formatDate(alert.timestamp)}</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Source Information</h6>
+                        <ul class="list-unstyled">
+                            <li><strong>File:</strong> ${alert.source.filename}</li>
+                            <li><strong>File Type:</strong> ${alert.source.type}</li>
+                            <li><strong>Size:</strong> ${formatFileSize(alert.source.size)}</li>
+                        </ul>
+                    </div>
+                </div>
+                ${alert.recommendations ? `
+                <div class="mb-3">
+                    <h6>Recommendations</h6>
+                    <ul>
+                        ${alert.recommendations.map(rec => `<li>${rec}</li>`).join('')}
+                    </ul>
+                </div>
+                ` : ''}
+                ${alert.technicalDetails ? `
+                <div class="mb-3">
+                    <h6>Technical Details</h6>
+                    <pre class="bg-light p-3 rounded"><code>${JSON.stringify(alert.technicalDetails, null, 2)}</code></pre>
+                </div>
+                ` : ''}
+            `;
+            
+            const modal = new bootstrap.Modal(document.getElementById('alertDetailsModal'));
+            modal.show();
+        })
+        .catch(error => console.error('Error fetching alert details:', error));
+}
+
+function resolveAlert(alertId) {
+    fetch(`/api/alerts/${alertId}/resolve`, {
+        method: 'POST'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            refreshAlerts();
+            bootstrap.Modal.getInstance(document.getElementById('alertDetailsModal')).hide();
+        }
+    })
+    .catch(error => console.error('Error resolving alert:', error));
+}
+
+function markAllRead() {
+    fetch('/api/alerts/mark-all-read', {
+        method: 'POST'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            refreshAlerts();
+        }
+    })
+    .catch(error => console.error('Error marking alerts as read:', error));
+}
+
+function getSeverityClass(severity) {
+    switch (severity.toLowerCase()) {
+        case 'high': return 'danger';
+        case 'medium': return 'warning';
+        case 'low': return 'info';
+        default: return 'secondary';
+    }
+}
+
+function getStatusClass(status) {
+    switch (status.toLowerCase()) {
+        case 'new': return 'danger';
+        case 'investigating': return 'warning';
+        case 'resolved': return 'success';
+        default: return 'secondary';
+    }
+}
+
+function formatDate(timestamp) {
+    return new Date(timestamp).toLocaleString();
+}
+
+function formatFileSize(bytes) {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
+// Add event listeners for filters
+document.getElementById('severityFilter').addEventListener('change', refreshAlerts);
+document.getElementById('typeFilter').addEventListener('change', refreshAlerts);
+document.getElementById('statusFilter').addEventListener('change', refreshAlerts);
+document.getElementById('timeFilter').addEventListener('change', refreshAlerts);
+
+// Initial load
+refreshAlerts();
+
+// Refresh every 30 seconds
+setInterval(refreshAlerts, 30000);
+</script>
+{% endblock %}

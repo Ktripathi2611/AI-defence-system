@@ -1,0 +1,175 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Phishing Protection - AI Defense System{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="bg-white rounded-lg shadow-md p-6">
+        <h1 class="text-2xl font-bold mb-6">Phishing Protection</h1>
+        
+        <!-- URL Analysis Form -->
+        <div class="mb-8">
+            <h2 class="text-xl font-semibold mb-4">Check URL</h2>
+            <form id="urlCheckForm" class="space-y-4">
+                <div>
+                    <label for="url" class="block text-sm font-medium text-gray-700">Enter URL</label>
+                    <div class="mt-1 flex rounded-md shadow-sm">
+                        <span class="inline-flex items-center px-3 rounded-l-md border border-r-0 border-gray-300 bg-gray-50 text-gray-500 text-sm">
+                            https://
+                        </span>
+                        <input type="text" name="url" id="url"
+                            class="flex-1 min-w-0 block w-full px-3 py-2 rounded-none rounded-r-md border border-gray-300 focus:ring-blue-500 focus:border-blue-500"
+                            placeholder="example.com">
+                    </div>
+                </div>
+                <div>
+                    <button type="submit" 
+                        class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                        Check URL
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Analysis Results -->
+        <div id="analysisResults" class="hidden">
+            <h2 class="text-xl font-semibold mb-4">Analysis Results</h2>
+            <div class="bg-gray-50 p-4 rounded-lg">
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <p class="text-sm text-gray-500">Safety Status</p>
+                        <p id="safetyStatus" class="text-lg font-semibold"></p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-500">Risk Score</p>
+                        <p id="riskScore" class="text-lg font-semibold"></p>
+                    </div>
+                </div>
+                <div class="mt-4">
+                    <p class="text-sm text-gray-500">Warning Signs</p>
+                    <ul id="warningSigns" class="mt-2 text-sm list-disc list-inside"></ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Scans -->
+        <div class="mt-8">
+            <h2 class="text-xl font-semibold mb-4">Recent URL Scans</h2>
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">URL</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Result</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Risk Score</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {% for scan in url_scans %}
+                        <tr>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                {{ scan.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                {{ scan.url }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full 
+                                    {% if scan.risk_score > 0.7 %}
+                                        bg-red-100 text-red-800
+                                    {% elif scan.risk_score > 0.3 %}
+                                        bg-yellow-100 text-yellow-800
+                                    {% else %}
+                                        bg-green-100 text-green-800
+                                    {% endif %}">
+                                    {{ "High Risk" if scan.risk_score > 0.7 else "Medium Risk" if scan.risk_score > 0.3 else "Safe" }}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                {{ "%.1f"|format(scan.risk_score * 100) }}%
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Safe Browsing Tips -->
+        <div class="mt-8">
+            <h2 class="text-xl font-semibold mb-4">Safe Browsing Tips</h2>
+            <div class="bg-blue-50 p-4 rounded-lg">
+                <ul class="space-y-2 text-sm text-blue-700">
+                    <li class="flex items-center">
+                        <i class="fas fa-check-circle mr-2"></i>
+                        Always verify the website's URL before entering sensitive information
+                    </li>
+                    <li class="flex items-center">
+                        <i class="fas fa-check-circle mr-2"></i>
+                        Look for HTTPS and the padlock icon in your browser
+                    </li>
+                    <li class="flex items-center">
+                        <i class="fas fa-check-circle mr-2"></i>
+                        Be cautious of unexpected emails asking you to verify account information
+                    </li>
+                    <li class="flex items-center">
+                        <i class="fas fa-check-circle mr-2"></i>
+                        Don't click on links in emails; type the URL directly in your browser
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.getElementById('urlCheckForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const url = document.getElementById('url').value;
+    
+    try {
+        const response = await fetch('/api/analyze-url', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ url: 'https://' + url }),
+        });
+        
+        const result = await response.json();
+        
+        if (result.error) {
+            throw new Error(result.error);
+        }
+        
+        // Update results
+        document.getElementById('safetyStatus').textContent = result.is_phishing ? 'Potentially Unsafe' : 'Safe';
+        document.getElementById('safetyStatus').className = 'text-lg font-semibold ' + 
+            (result.is_phishing ? 'text-red-600' : 'text-green-600');
+            
+        document.getElementById('riskScore').textContent = `${(result.risk_score * 100).toFixed(1)}%`;
+        
+        const warningsList = document.getElementById('warningSigns');
+        warningsList.innerHTML = '';
+        if (result.warning_signs && result.warning_signs.length) {
+            result.warning_signs.forEach(warning => {
+                const li = document.createElement('li');
+                li.textContent = warning;
+                warningsList.appendChild(li);
+            });
+        } else {
+            warningsList.innerHTML = '<li>No suspicious elements detected</li>';
+        }
+        
+        document.getElementById('analysisResults').classList.remove('hidden');
+        
+    } catch (error) {
+        alert('Error analyzing URL: ' + error.message);
+    }
+});
+</script>
+{% endblock %}

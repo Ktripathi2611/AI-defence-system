@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+
+{% block title %}Welcome to AI Defence System{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-5 bg-light">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-8 text-center">
+                <h1 class="display-3 fw-bold mb-4">
+                    <span class="text-primary">🛡️</span> AI Defence System
+                </h1>
+                <p class="lead mb-5 text-muted">
+                    Protecting your digital world with advanced artificial intelligence
+                </p>
+            </div>
+        </div>
+
+        <div class="row g-4 justify-content-center mb-5">
+            <div class="col-md-4">
+                <div class="card h-100 border-0 shadow-sm hover-shadow">
+                    <div class="card-body p-4">
+                        <div class="feature-icon mb-3">
+                            <span class="display-5 text-primary">🔍</span>
+                        </div>
+                        <h3 class="h4 card-title mb-3">Threat Detection</h3>
+                        <p class="card-text text-muted">Real-time scanning and analysis of potential security threats</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card h-100 border-0 shadow-sm hover-shadow">
+                    <div class="card-body p-4">
+                        <div class="feature-icon mb-3">
+                            <span class="display-5 text-primary">🎭</span>
+                        </div>
+                        <h3 class="h4 card-title mb-3">DeepFake Detection</h3>
+                        <p class="card-text text-muted">Identify manipulated media using advanced AI algorithms</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card h-100 border-0 shadow-sm hover-shadow">
+                    <div class="card-body p-4">
+                        <div class="feature-icon mb-3">
+                            <span class="display-5 text-primary">🔒</span>
+                        </div>
+                        <h3 class="h4 card-title mb-3">Phishing Protection</h3>
+                        <p class="card-text text-muted">Guard against sophisticated phishing attempts</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="text-center">
+            {% if current_user.is_authenticated %}
+                <a href="{{ url_for('main.dashboard') }}" class="btn btn-primary btn-lg px-5 py-3">
+                    Access Dashboard
+                </a>
+            {% else %}
+                <a href="{{ url_for('auth.login') }}" class="btn btn-primary btn-lg px-5 py-3 me-3">
+                    Login
+                </a>
+                <a href="{{ url_for('auth.register') }}" class="btn btn-outline-primary btn-lg px-5 py-3">
+                    Register
+                </a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+.hover-shadow {
+    transition: all 0.3s ease;
+}
+.hover-shadow:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 .5rem 1rem rgba(0,0,0,.15)!important;
+}
+.feature-icon {
+    display: inline-block;
+}
+</style>
+{% endblock %}

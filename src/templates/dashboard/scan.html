@@ -1,0 +1,190 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Scan - AI Defense System{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col">
+            <h2 class="mb-3">
+                <i class="fas fa-search me-2"></i>Security Scan
+            </h2>
+            <p class="text-muted">Upload files or provide URLs to scan for potential security threats</p>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- File Upload Section -->
+        <div class="col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h4 class="card-title mb-3">
+                        <i class="fas fa-file-upload me-2"></i>File Scan
+                    </h4>
+                    <form method="POST" enctype="multipart/form-data" action="{{ url_for('main.scan_file') }}">
+                        <div class="mb-3">
+                            <label for="file" class="form-label">Choose File</label>
+                            <input type="file" class="form-control" id="file" name="file" required>
+                            <div class="form-text">Supported formats: Images, Documents, Executables</div>
+                        </div>
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="deepfake" name="deepfake">
+                                <label class="form-check-label" for="deepfake">
+                                    Enable Deepfake Detection
+                                </label>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-search me-2"></i>Scan File
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- URL Scan Section -->
+        <div class="col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h4 class="card-title mb-3">
+                        <i class="fas fa-globe me-2"></i>URL Scan
+                    </h4>
+                    <form method="POST" action="{{ url_for('main.scan_url') }}">
+                        <div class="mb-3">
+                            <label for="url" class="form-label">Enter URL</label>
+                            <input type="url" class="form-control" id="url" name="url" 
+                                   placeholder="https://example.com" required>
+                            <div class="form-text">Enter the complete URL including http:// or https://</div>
+                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-search me-2"></i>Scan URL
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Scans -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <h4 class="card-title mb-3">
+                        <i class="fas fa-history me-2"></i>Recent Scans
+                    </h4>
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Type</th>
+                                    <th>Target</th>
+                                    <th>Status</th>
+                                    <th>Threats</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% if scans %}
+                                    {% for scan in scans %}
+                                    <tr>
+                                        <td>{{ scan.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                                        <td>{{ scan.scan_type }}</td>
+                                        <td>{{ scan.target }}</td>
+                                        <td>
+                                            <span class="badge bg-{{ scan.status_color }}">
+                                                {{ scan.status }}
+                                            </span>
+                                        </td>
+                                        <td>{{ scan.threats_found }}</td>
+                                        <td>
+                                            <a href="{{ url_for('main.scan_details', scan_id=scan.id) }}" 
+                                               class="btn btn-sm btn-info">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                {% else %}
+                                    <tr>
+                                        <td colspan="6" class="text-center">No scans performed yet</td>
+                                    </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Scan Progress Modal -->
+<div class="modal fade" id="scanProgressModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Scan in Progress</h5>
+            </div>
+            <div class="modal-body text-center">
+                <div class="spinner-border text-primary mb-3" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p id="scanStatus">Analyzing file for potential threats...</p>
+                <div class="progress">
+                    <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                         role="progressbar" style="width: 0%"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const fileForm = document.querySelector('form[action*="scan_file"]');
+    const urlForm = document.querySelector('form[action*="scan_url"]');
+    const progressModal = new bootstrap.Modal(document.getElementById('scanProgressModal'));
+    const progressBar = document.querySelector('.progress-bar');
+    const statusText = document.getElementById('scanStatus');
+
+    function showProgress(form) {
+        form.addEventListener('submit', function(e) {
+            progressModal.show();
+            let progress = 0;
+            
+            const interval = setInterval(function() {
+                progress += 5;
+                if (progress <= 90) {
+                    progressBar.style.width = progress + '%';
+                    if (progress < 30) {
+                        statusText.textContent = 'Initializing scan...';
+                    } else if (progress < 60) {
+                        statusText.textContent = 'Analyzing content...';
+                    } else {
+                        statusText.textContent = 'Finalizing results...';
+                    }
+                }
+            }, 500);
+
+            // Store the interval ID in sessionStorage to clear it after redirect
+            sessionStorage.setItem('scanProgressInterval', interval);
+        });
+    }
+
+    if (fileForm) showProgress(fileForm);
+    if (urlForm) showProgress(urlForm);
+
+    // Clear interval if it exists (after redirect back to this page)
+    const existingInterval = sessionStorage.getItem('scanProgressInterval');
+    if (existingInterval) {
+        clearInterval(parseInt(existingInterval));
+        sessionStorage.removeItem('scanProgressInterval');
+    }
+});
+</script>
+{% endblock %}
