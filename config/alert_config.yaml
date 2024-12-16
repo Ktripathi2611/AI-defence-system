@@ -1,0 +1,56 @@
+thresholds:
+  - metric: cpu_usage
+    warning_threshold: 80.0
+    critical_threshold: 90.0
+    duration: 60  # Alert after 1 minute of sustained high usage
+    cooldown: 300  # Wait 5 minutes before re-alerting
+
+  - metric: memory_usage
+    warning_threshold: 85.0
+    critical_threshold: 95.0
+    duration: 60
+    cooldown: 300
+
+  - metric: disk_usage
+    warning_threshold: 85.0
+    critical_threshold: 95.0
+    duration: 300  # Alert after 5 minutes for disk usage
+    cooldown: 3600  # Wait 1 hour before re-alerting
+
+  - metric: gpu_usage
+    warning_threshold: 85.0
+    critical_threshold: 95.0
+    duration: 60
+    cooldown: 300
+
+  - metric: error_rate
+    warning_threshold: 5.0  # 5% error rate
+    critical_threshold: 10.0  # 10% error rate
+    duration: 300
+    cooldown: 900
+
+  - metric: active_tasks
+    warning_threshold: 100
+    critical_threshold: 150
+    duration: 60
+    cooldown: 300
+
+notification_channels:
+  email:
+    from_address: "alerts@system.com"
+    to_address: "admin@system.com"
+    smtp_server: "smtp.gmail.com"
+    smtp_port: 587
+    use_tls: true
+    username: ""  # Add your SMTP username
+    password: ""  # Add your SMTP password
+
+  slack:
+    webhook_url: ""  # Add your Slack webhook URL
+    channel: "#system-alerts"
+
+  webhook:
+    url: "http://your-webhook-endpoint/alerts"
+    headers:
+      Content-Type: "application/json"
+      Authorization: ""  # Add your authorization token if needed

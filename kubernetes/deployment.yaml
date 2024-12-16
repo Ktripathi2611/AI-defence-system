@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cybershield
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: cybershield
+  template:
+    metadata:
+      labels:
+        app: cybershield
+    spec:
+      containers:
+      - name: cybershield
+        image: cybershield:latest
+        ports:
+        - containerPort: 5000
+        env:
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: cybershield-secrets
+              key: database-url
+        - name: REDIS_URL
+          valueFrom:
+            secretKeyRef:
+              name: cybershield-secrets
+              key: redis-url
