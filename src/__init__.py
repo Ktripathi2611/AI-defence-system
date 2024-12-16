@@ -1,18 +1,13 @@
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
-from flask_login import LoginManager
-from flask_migrate import Migrate
-from flask_cors import CORS
 import os
 from dotenv import load_dotenv
 
 # Load environment variables
 load_dotenv()
 
-# Initialize extensions
+# Initialize database
 db = SQLAlchemy()
-login_manager = LoginManager()
-migrate = Migrate()
 
 def create_app(test_config=None):
     app = Flask(__name__)
@@ -33,35 +28,14 @@ def create_app(test_config=None):
     # Ensure upload directory exists
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
     
-    # Initialize extensions
-    from .models import init_db
-    init_db(app)
-    migrate.init_app(app, db)
-    login_manager.init_app(app)
-    login_manager.login_view = 'auth.login'
-    CORS(app)
+    # Initialize database
+    db.init_app(app)
     
-    # Import and register blueprints
-    from .routes.main import main_bp, init_app as init_main
-    from .routes.auth import auth_bp
-    from .routes.chat import chat_bp
+    # Register core blueprints
+    from .routes.main import main_bp
+    from .routes.api import api_bp
     
     app.register_blueprint(main_bp)
-    app.register_blueprint(auth_bp, url_prefix='/auth')
-    app.register_blueprint(chat_bp, url_prefix='/chat')
+    app.register_blueprint(api_bp, url_prefix='/api')
     
-    # Initialize custom filters
-    init_main(app)
-    
-    # Register custom filters
-    from .utils.filters import time_ago
-    app.jinja_env.filters['time_ago'] = time_ago
-
     return app
-
-@login_manager.user_loader
-def load_user(user_id):
-    from .models.user import User
-    from flask import current_app
-    with current_app.app_context():
-        return User.query.get(int(user_id))
