@@ -1,5 +1,4 @@
 from datetime import datetime
-import humanize
 
 def format_number(value):
     """Format a number with thousand separators"""

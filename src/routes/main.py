@@ -34,7 +34,22 @@ def init_app(app):
     app.jinja_env.filters['format_number'] = format_number
     app.jinja_env.filters['time_ago'] = time_ago
 
+@main_bp.app_template_filter('datetime')
+def format_datetime(value):
+    if value is None:
+        return ""
+    return value.strftime('%Y-%m-%d %H:%M:%S')
+
+@main_bp.errorhandler(404)
+def page_not_found(e):
+    return render_template('errors/404.html'), 404
+
+@main_bp.errorhandler(500)
+def internal_server_error(e):
+    return render_template('errors/500.html'), 500
+
 @main_bp.route('/')
+@login_required
 def index():
     return redirect(url_for('main.dashboard'))
 
@@ -115,32 +130,52 @@ def scan():
 @login_required
 def alerts():
     """Render the alerts page."""
-    alerts = Alert.query.order_by(Alert.timestamp.desc()).all()
-    return render_template('dashboard/alerts.html', alerts=alerts)
+    # Get all alerts ordered by severity and timestamp
+    alerts = Alert.query.order_by(Alert.severity.desc(), Alert.timestamp.desc()).all()
+    return render_template('alerts.html', alerts=alerts)
 
 @main_bp.route('/reports')
 @login_required
 def reports():
     """Render the reports page."""
-    return render_template('dashboard/reports.html')
+    # Get system statistics
+    stats = {
+        'total_scans': Scan.query.count(),
+        'total_threats': ThreatAnalysis.query.count(),
+        'active_threats': ThreatAnalysis.query.filter_by(status='active').count(),
+        'deepfake_detections': DeepFakeAnalysis.query.count()
+    }
+    
+    # Get recent activities without using Activity model
+    recent_reports = ThreatAnalysis.query.order_by(ThreatAnalysis.timestamp.desc()).limit(10).all()
+    
+    return render_template('reports.html', stats=stats, recent_reports=recent_reports)
+
+@main_bp.route('/threat-analysis')
+@login_required
+def threat_analysis():
+    """Render the threat analysis page."""
+    threats = ThreatAnalysis.query.order_by(ThreatAnalysis.timestamp.desc()).all()
+    return render_template('dashboard/threat_analysis.html', threats=threats)
+
+@main_bp.route('/deepfake-detection')
+@login_required
+def deepfake_detection():
+    """Render the deepfake detection page."""
+    analyses = DeepFakeAnalysis.query.order_by(DeepFakeAnalysis.timestamp.desc()).all()
+    return render_template('dashboard/deepfake_detection.html', analyses=analyses)
+
+@main_bp.route('/chat')
+@login_required
+def chat():
+    """Render the chat interface."""
+    return render_template('chat.html')
 
 @main_bp.route('/settings')
 @login_required
 def settings():
     """Render the settings page."""
     return render_template('dashboard/settings.html')
-
-@main_bp.route('/threat-analysis')
-@login_required
-def threat_analysis():
-    """Render the threat analysis page."""
-    return render_template('dashboard/threat_analysis.html')
-
-@main_bp.route('/deepfake-detection')
-@login_required
-def deepfake_detection():
-    """Render the deepfake detection page."""
-    return render_template('dashboard/deepfake_detection.html')
 
 def extract_threats(result: Dict[str, Any]) -> List[Dict[str, Any]]:
     """Extract threats from a scan result safely."""
