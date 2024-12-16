@@ -2,87 +2,111 @@ document.addEventListener('DOMContentLoaded', function() {
     // System control buttons
     const startButton = document.getElementById('startSystem');
     const stopButton = document.getElementById('stopSystem');
+    const systemToast = document.getElementById('systemToast');
+    const toastTitle = document.getElementById('toastTitle');
+    const toastMessage = document.getElementById('toastMessage');
+    
+    // Bootstrap toast instance
+    const toast = new bootstrap.Toast(systemToast);
 
-    if (startButton) {
-        startButton.addEventListener('click', function() {
-            toggleSystem('start');
-        });
+    // Helper function to show toast notification
+    function showToast(title, message, success = true) {
+        toastTitle.textContent = title;
+        toastMessage.textContent = message;
+        systemToast.classList.remove('bg-success', 'bg-danger');
+        systemToast.classList.add(success ? 'bg-success' : 'bg-danger');
+        toast.show();
     }
 
-    if (stopButton) {
-        stopButton.addEventListener('click', function() {
-            toggleSystem('stop');
-        });
+    // Helper function to update button states
+    function updateButtonStates(isRunning) {
+        startButton.disabled = isRunning;
+        stopButton.disabled = !isRunning;
     }
 
-    function toggleSystem(action) {
-        const url = `/api/system/${action}`;
+    // Helper function to handle system control
+    async function handleSystemControl(action) {
         const button = action === 'start' ? startButton : stopButton;
-        const otherButton = action === 'start' ? stopButton : startButton;
-
-        // Disable both buttons during the request
-        button.disabled = true;
-        otherButton.disabled = true;
-
-        // Add loading spinner
         const originalContent = button.innerHTML;
-        button.innerHTML = `<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>Processing...`;
+        
+        try {
+            // Show loading state
+            button.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processing...';
+            button.disabled = true;
 
-        fetch(url, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            credentials: 'same-origin'
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.status === 'success') {
-                // Update system status badge
+            // Make API request
+            const response = await fetch(`/api/system/${action}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                showToast('Success', data.message, true);
+                // Update UI to reflect new state
                 const statusBadge = document.querySelector('.badge');
                 if (statusBadge) {
                     statusBadge.className = `badge bg-${action === 'start' ? 'success' : 'danger'} p-2`;
-                    statusBadge.innerHTML = `<i class="fas fa-circle me-1"></i>${action === 'start' ? 'Running' : 'Stopped'}`;
+                    statusBadge.innerHTML = `<i class="fas fa-circle me-1"></i> ${action === 'start' ? 'Running' : 'Stopped'}`;
+                }
+                updateButtonStates(action === 'start');
+            } else {
+                throw new Error(data.message || 'Failed to control system');
+            }
+        } catch (error) {
+            showToast('Error', error.message, false);
+        } finally {
+            // Restore button state
+            button.innerHTML = originalContent;
+            button.disabled = false;
+        }
+    }
+
+    // Event listeners for system control buttons
+    if (startButton) {
+        startButton.addEventListener('click', () => handleSystemControl('start'));
+    }
+    if (stopButton) {
+        stopButton.addEventListener('click', () => handleSystemControl('stop'));
+    }
+
+    // Update system stats periodically
+    function updateSystemStats() {
+        fetch('/api/system/stats')
+            .then(response => response.json())
+            .then(data => {
+                // Update CPU usage
+                const cpuElement = document.querySelector('[data-stat="cpu"]');
+                if (cpuElement) {
+                    const percentage = data.cpu_usage;
+                    cpuElement.style.width = `${percentage}%`;
+                    cpuElement.classList.toggle('bg-danger', percentage > 80);
+                    cpuElement.classList.toggle('bg-success', percentage <= 80);
                 }
 
-                // Update button states
-                button.disabled = true;
-                otherButton.disabled = false;
+                // Update memory usage
+                const memoryElement = document.querySelector('[data-stat="memory"]');
+                if (memoryElement) {
+                    const percentage = data.memory_usage;
+                    memoryElement.style.width = `${percentage}%`;
+                    memoryElement.classList.toggle('bg-danger', percentage > 80);
+                    memoryElement.classList.toggle('bg-success', percentage <= 80);
+                }
 
-                // Show success message
-                showAlert('success', `System ${action === 'start' ? 'started' : 'stopped'} successfully`);
-            } else {
-                // Re-enable the clicked button on error
-                button.disabled = false;
-                otherButton.disabled = action === 'start';
-                showAlert('danger', data.message || `Failed to ${action} system`);
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            button.disabled = false;
-            otherButton.disabled = action === 'start';
-            showAlert('danger', `Error ${action}ing system`);
-        })
-        .finally(() => {
-            // Restore original button content
-            button.innerHTML = originalContent;
-        });
+                // Update other stats
+                Object.entries(data).forEach(([key, value]) => {
+                    const element = document.querySelector(`[data-stat="${key}"]`);
+                    if (element) {
+                        element.textContent = value;
+                    }
+                });
+            })
+            .catch(error => console.error('Failed to update system stats:', error));
     }
 
-    function showAlert(type, message) {
-        const alertDiv = document.createElement('div');
-        alertDiv.className = `alert alert-${type} alert-dismissible fade show position-fixed top-0 end-0 m-3`;
-        alertDiv.style.zIndex = '1050';
-        alertDiv.innerHTML = `
-            ${message}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        `;
-        document.body.appendChild(alertDiv);
-
-        // Remove the alert after 5 seconds
-        setTimeout(() => {
-            alertDiv.remove();
-        }, 5000);
-    }
+    // Update stats every 5 seconds
+    setInterval(updateSystemStats, 5000);
 });

@@ -14,18 +14,21 @@ db = SQLAlchemy()
 login_manager = LoginManager()
 migrate = Migrate()
 
-def create_app():
+def create_app(test_config=None):
     app = Flask(__name__)
     
     # Configure app
-    app.config.update(
-        SECRET_KEY=os.getenv('SECRET_KEY', 'dev-key-please-change'),
-        SQLALCHEMY_DATABASE_URI=os.getenv('DATABASE_URL', 'sqlite:///aidefense.db'),
-        SQLALCHEMY_TRACK_MODIFICATIONS=False,
-        UPLOAD_FOLDER=os.path.join(os.path.dirname(os.path.abspath(__file__)), 'uploads'),
-        MAX_CONTENT_LENGTH=16 * 1024 * 1024,  # 16MB max file size
-        ALLOWED_EXTENSIONS={'png', 'jpg', 'jpeg', 'gif', 'mp4', 'avi', 'wav', 'mp3'}
-    )
+    if test_config is None:
+        app.config.update(
+            SECRET_KEY=os.getenv('SECRET_KEY', 'dev-key-please-change'),
+            SQLALCHEMY_DATABASE_URI=os.getenv('DATABASE_URL', 'sqlite:///aidefense.db'),
+            SQLALCHEMY_TRACK_MODIFICATIONS=False,
+            UPLOAD_FOLDER=os.path.join(os.path.dirname(os.path.abspath(__file__)), 'uploads'),
+            MAX_CONTENT_LENGTH=16 * 1024 * 1024,  # 16MB max file size
+            ALLOWED_EXTENSIONS={'png', 'jpg', 'jpeg', 'gif', 'mp4', 'avi', 'wav', 'mp3'}
+        )
+    else:
+        app.config.update(test_config)
     
     # Ensure upload directory exists
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
@@ -50,6 +53,10 @@ def create_app():
     # Initialize custom filters
     init_main(app)
     
+    # Register custom filters
+    from .utils.filters import time_ago
+    app.jinja_env.filters['time_ago'] = time_ago
+
     return app
 
 @login_manager.user_loader

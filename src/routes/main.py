@@ -1,5 +1,5 @@
 from flask import Blueprint, render_template, jsonify, request, current_app, flash, redirect, url_for, send_from_directory, Response
-from flask_login import login_required
+from flask_login import login_required, current_user
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Union, Any
 import os
@@ -285,32 +285,34 @@ def allowed_file(filename):
 @main_bp.route('/api/system/<action>', methods=['POST'])
 @login_required
 def system_control(action):
-    """Control the AI defense system."""
+    """Handle system start/stop actions"""
     if action not in ['start', 'stop']:
         return jsonify({'status': 'error', 'message': 'Invalid action'}), 400
 
     try:
-        # Get the current system status
         system_status = SystemStatus.query.first()
         if not system_status:
             system_status = SystemStatus(status='stopped')
             db.session.add(system_status)
 
-        if action == 'start' and system_status.status == 'running':
-            return jsonify({'status': 'error', 'message': 'System is already running'}), 400
-        elif action == 'stop' and system_status.status == 'stopped':
-            return jsonify({'status': 'error', 'message': 'System is already stopped'}), 400
+        # Check if the action matches current state
+        if (action == 'start' and system_status.status == 'running') or \
+           (action == 'stop' and system_status.status == 'stopped'):
+            return jsonify({
+                'status': 'error',
+                'message': f'System is already {system_status.status}'
+            }), 400
 
         # Update system status
         system_status.status = 'running' if action == 'start' else 'stopped'
         system_status.last_state_change = datetime.utcnow()
-        db.session.commit()
-
-        # Log the action
+        
+        # Log the activity
         activity = Activity(
-            action=f'System {action}ed',
-            details=f'System was {action}ed by user',
-            activity_type='system_control'
+            user_id=current_user.id,
+            event=f'System {action}ed',
+            status='success',
+            details=f'System was successfully {action}ed by {current_user.username}'
         )
         db.session.add(activity)
         db.session.commit()
@@ -319,10 +321,52 @@ def system_control(action):
             'status': 'success',
             'message': f'System {action}ed successfully',
             'system_status': system_status.status,
-            'last_state_change': system_status.last_state_change
+            'last_state_change': system_status.last_state_change.isoformat()
         })
 
     except Exception as e:
         db.session.rollback()
-        current_app.logger.error(f"Error in system_control: {str(e)}")
-        return jsonify({'status': 'error', 'message': str(e)}), 500
+        return jsonify({
+            'status': 'error',
+            'message': f'Failed to {action} system: {str(e)}'
+        }), 500
+
+@main_bp.route('/api/system/stats')
+@login_required
+def system_stats():
+    """Get current system statistics"""
+    try:
+        # Get CPU and memory usage using psutil
+        cpu_usage = psutil.cpu_percent(interval=1)
+        memory = psutil.virtual_memory()
+        memory_usage = memory.percent
+
+        # Get scan statistics
+        active_scans = Scan.query.filter_by(status='in_progress').count()
+        total_scans = Scan.query.count()
+        today_scans = Scan.query.filter(
+            Scan.created_at >= datetime.now().date()
+        ).count()
+
+        # Get threat statistics
+        threats = ThreatAnalysis.query.all()
+        threats_detected = len(threats)
+        critical_threats = sum(1 for t in threats if t.severity == 'critical')
+        warning_threats = sum(1 for t in threats if t.severity == 'warning')
+
+        return jsonify({
+            'cpu_usage': cpu_usage,
+            'memory_usage': memory_usage,
+            'active_scans': active_scans,
+            'total_scans': total_scans,
+            'today_scans': today_scans,
+            'threats_detected': threats_detected,
+            'critical_threats': critical_threats,
+            'warning_threats': warning_threats
+        })
+
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'message': f'Failed to get system stats: {str(e)}'
+        }), 500
