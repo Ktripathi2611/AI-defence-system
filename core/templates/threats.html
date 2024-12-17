@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+
+{% block title %}Threats - AI Defense System{% endblock %}
+
+{% block content %}
+<div class="bg-white p-4 rounded shadow">
+    <h2 class="text-2xl font-bold mb-4">Detected Threats</h2>
+    <div class="overflow-x-auto">
+        <table class="min-w-full table-auto">
+            <thead>
+                <tr class="bg-gray-100">
+                    <th class="px-4 py-2">Type</th>
+                    <th class="px-4 py-2">Source</th>
+                    <th class="px-4 py-2">Severity</th>
+                    <th class="px-4 py-2">Status</th>
+                    <th class="px-4 py-2">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for threat in threats %}
+                <tr>
+                    <td class="border px-4 py-2">{{ threat.type }}</td>
+                    <td class="border px-4 py-2">{{ threat.source }}</td>
+                    <td class="border px-4 py-2">{{ threat.severity }}</td>
+                    <td class="border px-4 py-2">{{ threat.status }}</td>
+                    <td class="border px-4 py-2">
+                        <button class="bg-blue-500 text-white px-2 py-1 rounded">Details</button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
