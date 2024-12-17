@@ -4,227 +4,513 @@
 {% block title %}Dashboard - AI Defense System{% endblock %}
 
 {% block content %}
-<div class="container">
-    <!-- Status Overview -->
-    <div class="row mb-4">
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card status-card success h-100">
-                <div class="card-body">
-                    <div class="row align-items-center">
-                        <div class="col">
-                            <h6 class="text-success fw-bold mb-1">System Status</h6>
-                            <h3 class="mb-0">Active</h3>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-shield-alt fa-2x text-success opacity-25"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card status-card warning h-100">
-                <div class="card-body">
-                    <div class="row align-items-center">
-                        <div class="col">
-                            <h6 class="text-warning fw-bold mb-1">Active Threats</h6>
-                            <h3 class="mb-0">{{ active_threats|default:"3" }}</h3>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-exclamation-triangle fa-2x text-warning opacity-25"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card status-card info h-100">
-                <div class="card-body">
-                    <div class="row align-items-center">
-                        <div class="col">
-                            <h6 class="text-info fw-bold mb-1">Monitored Systems</h6>
-                            <h3 class="mb-0">{{ monitored_systems|default:"12" }}</h3>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-desktop fa-2x text-info opacity-25"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card status-card danger h-100">
-                <div class="card-body">
-                    <div class="row align-items-center">
-                        <div class="col">
-                            <h6 class="text-danger fw-bold mb-1">Blocked Attacks</h6>
-                            <h3 class="mb-0">{{ blocked_attacks|default:"247" }}</h3>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-ban fa-2x text-danger opacity-25"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Charts Row -->
-    <div class="row mb-4">
-        <div class="col-xl-8 mb-4">
-            <div class="card h-100">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">Threat Detection Overview</h5>
-                    <div class="dropdown">
-                        <button class="btn btn-link dropdown-toggle" type="button" id="dropdownMenuButton" 
-                                data-bs-toggle="dropdown">
-                            <i class="fas fa-ellipsis-v"></i>
-                        </button>
-                        <ul class="dropdown-menu dropdown-menu-end">
-                            <li><a class="dropdown-item" href="#">Last 24 Hours</a></li>
-                            <li><a class="dropdown-item" href="#">Last 7 Days</a></li>
-                            <li><a class="dropdown-item" href="#">Last 30 Days</a></li>
-                        </ul>
-                    </div>
-                </div>
-                <div class="card-body">
-                    <div class="chart-container">
-                        <canvas id="threatOverviewChart"></canvas>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-xl-4 mb-4">
-            <div class="card h-100">
-                <div class="card-header">
-                    <h5 class="mb-0">Threat Distribution</h5>
-                </div>
-                <div class="card-body">
-                    <div class="chart-container">
-                        <canvas id="threatDistributionChart"></canvas>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Recent Activity and Quick Actions -->
+<div class="container-fluid py-4">
     <div class="row">
-        <div class="col-xl-8 mb-4">
-            <div class="card h-100">
-                <div class="card-header">
-                    <h5 class="mb-0">Recent Activity</h5>
+        <!-- Redis Performance -->
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">Redis Performance
+                        <span id="redis-status" class="badge bg-danger ms-2">Disconnected</span>
+                    </h5>
+                    <div class="btn-group">
+                        <button id="start-redis" class="btn btn-sm btn-success" onclick="controlRedis('start')">
+                            <i class="fas fa-play me-1"></i>Start
+                        </button>
+                        <button id="stop-redis" class="btn btn-sm btn-danger" onclick="controlRedis('stop')" disabled>
+                            <i class="fas fa-stop me-1"></i>Stop
+                        </button>
+                    </div>
                 </div>
                 <div class="card-body">
-                    <div class="table-responsive">
-                        <table class="table table-hover">
-                            <thead>
-                                <tr>
-                                    <th>Time</th>
-                                    <th>Event</th>
-                                    <th>Type</th>
-                                    <th>Status</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for activity in recent_activities|default:default_activities %}
-                                <tr>
-                                    <td>{{ activity.time }}</td>
-                                    <td>{{ activity.event }}</td>
-                                    <td>
-                                        <span class="badge bg-{{ activity.type_class }}">
-                                            {{ activity.type }}
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <span class="badge bg-{{ activity.status_class }}">
-                                            {{ activity.status }}
-                                        </span>
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span>Memory Usage</span>
+                                <span id="redis-memory">0 MB</span>
+                            </div>
+                            <div class="progress mt-2" style="height: 5px;">
+                                <div id="redis-memory-bar" class="progress-bar" style="width: 0%"></div>
+                            </div>
+                        </li>
+                        <li class="list-group-item">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span>Connected Clients</span>
+                                <div>
+                                    <span id="redis-clients">0</span>
+                                    <small class="text-muted ms-2" id="redis-peak-clients">Peak: 0</small>
+                                </div>
+                            </div>
+                        </li>
+                        <li class="list-group-item">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span>Operations/sec</span>
+                                <span id="redis-ops">0</span>
+                            </div>
+                        </li>
+                        <li class="list-group-item">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span>Uptime</span>
+                                <span id="redis-uptime">0 days</span>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- System Health -->
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">System Health</h5>
+                    <span id="system-health-status" class="badge bg-success">Healthy</span>
+                </div>
+                <div class="card-body">
+                    <div class="mb-4">
+                        <div class="d-flex justify-content-between mb-1">
+                            <span>CPU Usage</span>
+                            <span id="cpu-usage-text">0%</span>
+                        </div>
+                        <div class="progress">
+                            <div id="cpu-usage-bar" class="progress-bar bg-primary" role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <div class="d-flex justify-content-between mb-1">
+                            <span>Memory Usage</span>
+                            <span id="memory-usage-text">0%</span>
+                        </div>
+                        <div class="progress">
+                            <div id="memory-usage-bar" class="progress-bar bg-primary" role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <div class="d-flex justify-content-between mb-1">
+                            <span>Disk Usage</span>
+                            <span id="disk-usage-text">0%</span>
+                        </div>
+                        <div class="progress">
+                            <div id="disk-usage-bar" class="progress-bar bg-primary" role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="col-xl-4 mb-4">
-            <div class="card h-100">
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
                 <div class="card-header">
-                    <h5 class="mb-0">Quick Actions</h5>
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-tasks"></i> Task Performance Monitor
+                    </h5>
                 </div>
                 <div class="card-body">
-                    <div class="d-grid gap-2">
-                        <button class="btn btn-primary">
-                            <i class="fas fa-sync-alt me-2"></i>Run System Scan
-                        </button>
-                        <button class="btn btn-success">
-                            <i class="fas fa-shield-alt me-2"></i>Update Defense Rules
-                        </button>
-                        <button class="btn btn-info">
-                            <i class="fas fa-download me-2"></i>Download Report
-                        </button>
-                        <button class="btn btn-warning">
-                            <i class="fas fa-exclamation-triangle me-2"></i>View Active Threats
-                        </button>
+                    <ul class="nav nav-tabs" id="taskMonitorTabs" role="tablist">
+                        <li class="nav-item">
+                            <a class="nav-link active" id="metrics-tab" data-toggle="tab" href="#metrics" role="tab">
+                                Task Metrics
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" id="flower-tab" data-toggle="tab" href="#flower" role="tab">
+                                Detailed Monitor
+                            </a>
+                        </li>
+                    </ul>
+                    <div class="tab-content mt-3" id="taskMonitorContent">
+                        <div class="tab-pane fade show active" id="metrics" role="tabpanel">
+                            <div class="row">
+                                <div class="col-md-3">
+                                    <div class="card bg-light">
+                                        <div class="card-body">
+                                            <h6 class="card-title">Active Tasks</h6>
+                                            <h2 class="mb-0" id="activeTasks">0</h2>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="card bg-light">
+                                        <div class="card-body">
+                                            <h6 class="card-title">Completed Tasks</h6>
+                                            <h2 class="mb-0" id="completedTasks">0</h2>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="card bg-light">
+                                        <div class="card-body">
+                                            <h6 class="card-title">Failed Tasks</h6>
+                                            <h2 class="mb-0" id="failedTasks">0</h2>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="card bg-light">
+                                        <div class="card-body">
+                                            <h6 class="card-title">Worker Status</h6>
+                                            <h2 class="mb-0" id="workerStatus">
+                                                <span class="badge badge-success">Online</span>
+                                            </h2>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row mt-4">
+                                <div class="col-12">
+                                    <div class="table-responsive">
+                                        <table class="table table-sm" id="recentTasksTable">
+                                            <thead>
+                                                <tr>
+                                                    <th>Task Name</th>
+                                                    <th>Status</th>
+                                                    <th>Started</th>
+                                                    <th>Duration</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="tab-pane fade" id="flower" role="tabpanel">
+                            <div class="embed-responsive embed-responsive-16by9">
+                                <iframe class="embed-responsive-item" src="http://localhost:5555" allowfullscreen></iframe>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-chart-line"></i> System Performance Monitor
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <ul class="nav nav-tabs" id="monitoringTabs" role="tablist">
+                        <li class="nav-item">
+                            <a class="nav-link active" id="overview-tab" data-toggle="tab" href="#overview" role="tab">
+                                Overview
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" id="tasks-tab" data-toggle="tab" href="#tasks" role="tab">
+                                Task Monitor
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" id="events-tab" data-toggle="tab" href="#events" role="tab">
+                                Event Log
+                            </a>
+                        </li>
+                    </ul>
+                    
+                    <div class="tab-content mt-3" id="monitoringContent">
+                        <!-- Overview Tab -->
+                        <div class="tab-pane fade show active" id="overview" role="tabpanel">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="card bg-light mb-3">
+                                        <div class="card-body">
+                                            <h6 class="card-title">System Status</h6>
+                                            <ul class="list-group list-group-flush">
+                                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                                    Redis Server
+                                                    <span id="redis-server-status" class="badge bg-secondary">Checking...</span>
+                                                </li>
+                                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                                    Celery Worker
+                                                    <span id="celery-worker-status" class="badge bg-secondary">Checking...</span>
+                                                </li>
+                                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                                    WebSocket
+                                                    <span id="websocket-status" class="badge bg-secondary">Checking...</span>
+                                                </li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="card bg-light mb-3">
+                                        <div class="card-body">
+                                            <h6 class="card-title">Performance Metrics</h6>
+                                            <div class="row">
+                                                <div class="col-md-4">
+                                                    <div class="metric-box text-center p-3">
+                                                        <h6>CPU Usage</h6>
+                                                        <h3 id="perf-cpu-usage" class="mb-0">0%</h3>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-4">
+                                                    <div class="metric-box text-center p-3">
+                                                        <h6>Memory Usage</h6>
+                                                        <h3 id="perf-memory-usage" class="mb-0">0%</h3>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-4">
+                                                    <div class="metric-box text-center p-3">
+                                                        <h6>Active Tasks</h6>
+                                                        <h3 id="perf-active-tasks" class="mb-0">0</h3>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="card bg-light mb-3">
+                                        <div class="card-body">
+                                            <h6 class="card-title">Service Controls</h6>
+                                            <div class="d-flex flex-column">
+                                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                                    <span>Redis Server</span>
+                                                    <div>
+                                                        <button class="btn btn-sm btn-success service-control" data-service="redis" data-action="start">Start</button>
+                                                        <button class="btn btn-sm btn-danger service-control" data-service="redis" data-action="stop">Stop</button>
+                                                    </div>
+                                                </div>
+                                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                                    <span>Celery Worker</span>
+                                                    <div>
+                                                        <button class="btn btn-sm btn-success service-control" data-service="celery-worker" data-action="start">Start</button>
+                                                        <button class="btn btn-sm btn-danger service-control" data-service="celery-worker" data-action="stop">Stop</button>
+                                                    </div>
+                                                </div>
+                                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                                    <span>Celery Beat</span>
+                                                    <div>
+                                                        <button class="btn btn-sm btn-success service-control" data-service="celery-beat" data-action="start">Start</button>
+                                                        <button class="btn btn-sm btn-danger service-control" data-service="celery-beat" data-action="stop">Stop</button>
+                                                    </div>
+                                                </div>
+                                                <div class="d-flex justify-content-between align-items-center">
+                                                    <span>Flower Monitor</span>
+                                                    <div>
+                                                        <button class="btn btn-sm btn-success service-control" data-service="flower" data-action="start">Start</button>
+                                                        <button class="btn btn-sm btn-danger service-control" data-service="flower" data-action="stop">Stop</button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Task Monitor Tab -->
+                        <div class="tab-pane fade" id="tasks" role="tabpanel">
+                            <div class="embed-responsive embed-responsive-16by9">
+                                <iframe class="embed-responsive-item" src="http://localhost:5555" allowfullscreen></iframe>
+                            </div>
+                        </div>
+                        
+                        <!-- Event Log Tab -->
+                        <div class="tab-pane fade" id="events" role="tabpanel">
+                            <div class="table-responsive">
+                                <table class="table table-sm" id="eventLogTable">
+                                    <thead>
+                                        <tr>
+                                            <th>Timestamp</th>
+                                            <th>Type</th>
+                                            <th>Message</th>
+                                            <th>Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Active Threats -->
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Active Threats
+                        <span id="threat-count" class="badge bg-danger float-end">0</span>
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div id="threats-list" class="list-group">
+                        <!-- Threats will be dynamically added here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- AI Models Status -->
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">AI Models
+                        <span id="models-status" class="badge bg-info float-end">5 Active</span>
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div id="models-list" class="list-group">
+                        <!-- AI models will be dynamically added here -->
                     </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
+
 {% endblock %}
 
 {% block extra_js %}
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
+// Initialize WebSocket connections
 document.addEventListener('DOMContentLoaded', function() {
-    // Threat Overview Chart
-    const threatCtx = document.getElementById('threatOverviewChart').getContext('2d');
-    new Chart(threatCtx, {
-        type: 'line',
-        data: {
-            labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
-            datasets: [{
-                label: 'Detected Threats',
-                data: [65, 59, 80, 81, 56, 55],
-                borderColor: 'rgb(255, 99, 132)',
-                tension: 0.1
-            }, {
-                label: 'Blocked Attacks',
-                data: [28, 48, 40, 19, 86, 27],
-                borderColor: 'rgb(54, 162, 235)',
-                tension: 0.1
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false
-        }
-    });
+    let redisSocket = null;
+    let systemSocket = null;
+    let threatsSocket = null;
+    
+    function connectWebSockets() {
+        // Redis WebSocket
+        redisSocket = new WebSocket(
+            `${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${window.location.host}/ws/redis-monitor/`
+        );
+        setupRedisWebSocket(redisSocket);
 
-    // Threat Distribution Chart
-    const distributionCtx = document.getElementById('threatDistributionChart').getContext('2d');
-    new Chart(distributionCtx, {
-        type: 'doughnut',
-        data: {
-            labels: ['Malware', 'DDoS', 'Phishing', 'Other'],
-            datasets: [{
-                data: [45, 25, 20, 10],
-                backgroundColor: [
-                    'rgb(255, 99, 132)',
-                    'rgb(54, 162, 235)',
-                    'rgb(255, 205, 86)',
-                    'rgb(75, 192, 192)'
-                ]
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false
+        // System WebSocket
+        systemSocket = new WebSocket(
+            `${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${window.location.host}/ws/system-monitor/`
+        );
+        setupSystemWebSocket(systemSocket);
+
+        // Threats WebSocket
+        threatsSocket = new WebSocket(
+            `${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${window.location.host}/ws/threats/`
+        );
+        setupThreatsWebSocket(threatsSocket);
+    }
+
+    function setupRedisWebSocket(socket) {
+        socket.onopen = () => {
+            console.log('Redis WebSocket connected');
+            document.getElementById('redis-status').className = 'badge bg-success float-end';
+            document.getElementById('redis-status').textContent = 'Connected';
+            socket.send(JSON.stringify({ type: 'request_update' }));
+        };
+
+        socket.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            if (data.type === 'redis_stats') {
+                updateRedisStats(data.data);
+            }
+        };
+
+        socket.onclose = () => {
+            document.getElementById('redis-status').className = 'badge bg-danger float-end';
+            document.getElementById('redis-status').textContent = 'Disconnected';
+            setTimeout(() => connectWebSockets(), 5000);
+        };
+    }
+
+    function setupSystemWebSocket(socket) {
+        socket.onopen = () => {
+            console.log('System WebSocket connected');
+            socket.send(JSON.stringify({ type: 'request_update' }));
+        };
+
+        socket.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            if (data.type === 'system_stats') {
+                updateSystemStats(data.data);
+            }
+        };
+
+        socket.onclose = () => setTimeout(() => connectWebSockets(), 5000);
+    }
+
+    function setupThreatsWebSocket(socket) {
+        socket.onopen = () => {
+            console.log('Threats WebSocket connected');
+            socket.send(JSON.stringify({ type: 'request_update' }));
+        };
+
+        socket.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            if (data.type === 'threats_update') {
+                updateThreats(data.data);
+            }
+        };
+
+        socket.onclose = () => setTimeout(() => connectWebSockets(), 5000);
+    }
+
+    function updateRedisStats(stats) {
+        document.getElementById('redis-memory').textContent = `${(stats.used_memory / 1024 / 1024).toFixed(1)} MB`;
+        document.getElementById('redis-memory-bar').style.width = `${(stats.used_memory / stats.total_system_memory * 100).toFixed(1)}%`;
+        document.getElementById('redis-clients').textContent = stats.connected_clients;
+        document.getElementById('redis-peak-clients').textContent = `Peak: ${stats.connected_clients_peak}`;
+        document.getElementById('redis-ops').textContent = stats.instantaneous_ops_per_sec;
+        document.getElementById('redis-uptime').textContent = `${(stats.uptime_in_seconds / 86400).toFixed(1)} days`;
+    }
+
+    function updateSystemStats(stats) {
+        document.getElementById('cpu-usage-text').textContent = `${stats.cpu_percent}%`;
+        document.getElementById('cpu-usage-bar').style.width = `${stats.cpu_percent}%`;
+        document.getElementById('memory-usage-text').textContent = `${stats.memory_percent}%`;
+        document.getElementById('memory-usage-bar').style.width = `${stats.memory_percent}%`;
+        document.getElementById('disk-usage-text').textContent = `${stats.disk_percent}%`;
+        document.getElementById('disk-usage-bar').style.width = `${stats.disk_percent}%`;
+
+        const systemStatus = document.getElementById('system-health-status');
+        if (stats.cpu_percent > 90 || stats.memory_percent > 90 || stats.disk_percent > 90) {
+            systemStatus.className = 'badge bg-danger';
+            systemStatus.textContent = 'Critical';
+        } else if (stats.cpu_percent > 70 || stats.memory_percent > 70 || stats.disk_percent > 70) {
+            systemStatus.className = 'badge bg-warning';
+            systemStatus.textContent = 'Warning';
+        } else {
+            systemStatus.className = 'badge bg-success';
+            systemStatus.textContent = 'Healthy';
         }
-    });
+    }
+
+    function updateThreats(threats) {
+        const threatsList = document.getElementById('threats-list');
+        threatsList.innerHTML = '';
+        document.getElementById('threat-count').textContent = threats.length;
+
+        threats.forEach(threat => {
+            const threatElement = document.createElement('div');
+            threatElement.className = `list-group-item list-group-item-${threat.severity}`;
+            threatElement.innerHTML = `
+                <div class="d-flex w-100 justify-content-between">
+                    <h6 class="mb-1">${threat.type}</h6>
+                    <small>${threat.severity}</small>
+                </div>
+                <p class="mb-1">${threat.message}</p>
+            `;
+            threatsList.appendChild(threatElement);
+        });
+    }
+
+    // Initial connection
+    connectWebSockets();
 });
 </script>
 {% endblock %}

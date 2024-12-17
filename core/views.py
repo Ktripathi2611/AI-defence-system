@@ -1,5 +1,12 @@
 from django.shortcuts import render
+from django.http import JsonResponse
 from datetime import datetime
+from redis import Redis
+from celery.app.control import Control
+from django_celery_results.models import TaskResult
+from datetime import timedelta
+from django.utils import timezone
+import redis
 
 def home(request):
     return render(request, 'base.html')
@@ -137,3 +144,45 @@ def network_scan(request):
     }
     
     return render(request, 'network_scan.html', context)
+
+def check_redis_status(request):
+    try:
+        redis_client = redis.Redis(host='localhost', port=6379, db=0)
+        redis_client.ping()
+        return JsonResponse({
+            'status': 'online',
+            'message': 'Redis server is running'
+        })
+    except redis.ConnectionError as e:
+        return JsonResponse({
+            'status': 'offline',
+            'message': str(e)
+        })
+    except Exception as e:
+        return JsonResponse({
+            'status': 'error',
+            'message': str(e)
+        })
+
+def check_celery_status(request):
+    try:
+        # Check for recent task activity
+        recent_tasks = TaskResult.objects.filter(
+            date_done__gte=timezone.now() - timedelta(minutes=5)
+        ).exists()
+        
+        if recent_tasks:
+            return JsonResponse({
+                'status': 'online',
+                'message': 'Celery worker is active'
+            })
+        else:
+            return JsonResponse({
+                'status': 'offline',
+                'message': 'No recent Celery activity'
+            })
+    except Exception as e:
+        return JsonResponse({
+            'status': 'error',
+            'message': str(e)
+        })

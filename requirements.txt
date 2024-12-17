@@ -8,3 +8,12 @@ django-crispy-forms==2.1
 crispy-bootstrap5==2023.10
 Pillow==10.1.0
 django-cors-headers==4.3.1
+channels==4.0.0
+channels-redis==4.1.0
+daphne==4.0.0
+redis==5.0.1
+celery==5.3.6
+psutil==5.9.7
+flower==2.0.1
+django-celery-beat==2.5.0
+django-celery-results==2.5.1

@@ -471,6 +471,17 @@ document.addEventListener('DOMContentLoaded', function() {
     selects.forEach(function(select) {
         select.size = select.options.length;
     });
+
+    // Initialize threats WebSocket
+    const threatSocket = new ThreatSocket();
+    
+    // Handle threat updates
+    threatSocket.on('threat_update', function(data) {
+        threatSocket.updateThreats(data);
+    });
+
+    // Request updates every 15 seconds
+    setInterval(() => threatSocket.requestUpdate(), 15000);
 });
 </script>
 {% endblock %}

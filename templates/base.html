@@ -18,7 +18,7 @@
     <!-- Navigation -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
         <div class="container-fluid">
-            <a class="navbar-brand" href="{% url 'home' %}">
+            <a class="navbar-brand" href="{% url 'dashboard' %}">
                 <i class="fas fa-shield-alt"></i> AI Defense System
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
@@ -40,24 +40,26 @@
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link {% if request.resolver_match.url_name == 'analytics' %}active{% endif %}" 
-                           href="{% url 'analytics' %}">
-                            <i class="fas fa-chart-line"></i> Analytics
+                        <a class="nav-link {% if request.resolver_match.url_name == 'settings' %}active{% endif %}" 
+                           href="{% url 'settings' %}">
+                            <i class="fas fa-cog"></i> Settings
                         </a>
                     </li>
                     <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle {% if request.resolver_match.url_name in 'ai_models,network_scan' %}active{% endif %}" 
+                        <a class="nav-link dropdown-toggle {% if 'tools' in request.path %}active{% endif %}" 
                            href="#" id="toolsDropdown" role="button" data-bs-toggle="dropdown">
                             <i class="fas fa-tools"></i> Tools
                         </a>
                         <ul class="dropdown-menu">
                             <li>
-                                <a class="dropdown-item" href="{% url 'ai_models' %}">
+                                <a class="dropdown-item {% if request.resolver_match.url_name == 'ai_models' %}active{% endif %}" 
+                                   href="{% url 'ai_models' %}">
                                     <i class="fas fa-brain"></i> AI Models
                                 </a>
                             </li>
                             <li>
-                                <a class="dropdown-item" href="{% url 'network_scan' %}">
+                                <a class="dropdown-item {% if request.resolver_match.url_name == 'network_scan' %}active{% endif %}" 
+                                   href="{% url 'network_scan' %}">
                                     <i class="fas fa-network-wired"></i> Network Scan
                                 </a>
                             </li>
@@ -109,8 +111,7 @@
 
                     <!-- Settings -->
                     <li class="nav-item">
-                        <a class="nav-link {% if request.resolver_match.url_name == 'settings' %}active{% endif %}" 
-                           href="{% url 'settings' %}">
+                        <a class="nav-link" href="#">
                             <i class="fas fa-cog"></i>
                         </a>
                     </li>
@@ -123,12 +124,12 @@
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end">
                             <li>
-                                <a class="dropdown-item" href="{% url 'profile' %}">
+                                <a class="dropdown-item" href="#">
                                     <i class="fas fa-user me-2"></i>Profile
                                 </a>
                             </li>
                             <li>
-                                <a class="dropdown-item" href="{% url 'settings' %}">
+                                <a class="dropdown-item" href="#">
                                     <i class="fas fa-cog me-2"></i>Settings
                                 </a>
                             </li>
@@ -179,6 +180,7 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <!-- Custom JavaScript -->
     <script src="{% static 'js/main.js' %}"></script>
+    <script src="{% static 'js/websocket.js' %}"></script>
     {% block extra_js %}{% endblock %}
 
     <!-- Toast Container for Notifications -->

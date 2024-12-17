@@ -2,7 +2,9 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
-    path('', views.dashboard, name='home'),  # Make dashboard the landing page
+    path('', views.dashboard, name='dashboard'),  
+    path('api/status/redis', views.check_redis_status, name='redis_status'),
+    path('api/status/celery', views.check_celery_status, name='celery_status'),
     path('dashboard/', views.dashboard, name='dashboard'),
     path('threats/', views.threats, name='threats'),
     path('analytics/', views.analytics, name='analytics'),

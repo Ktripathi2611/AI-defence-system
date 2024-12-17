@@ -21,7 +21,7 @@ A comprehensive AI-powered security monitoring and defense system built with Dja
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/ai-defense-system.git
+git clone https://github.com/ktripathi2611/ai-defense-system.git
 cd ai-defense-system
 ```
 
@@ -95,8 +95,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Security
 
-For security issues, please email security@yourdomain.com instead of using the issue tracker.
+For security issues, please email tripathikushal522@gmail.com instead of using the issue tracker.
 
 ## Support
 
-For support, email support@yourdomain.com or join our Slack channel.
+For support, email tripathikushal522@gmail.com or join our Slack channel.
