@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>AI Defense System</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <img src="icons/icon48.png" alt="AI Defense System Logo">
+      <h1>AI Defense System</h1>
+    </header>
+
+    <div class="status-panel">
+      <div class="protection-status">
+        <h2>Protection Status</h2>
+        <div class="status-indicator active">
+          <span class="dot"></span>
+          <span class="text">Active</span>
+        </div>
+      </div>
+      
+      <div class="stats">
+        <div class="stat-item">
+          <span class="label">Threats Blocked</span>
+          <span class="value" id="threats-blocked">0</span>
+        </div>
+        <div class="stat-item">
+          <span class="label">Sites Scanned</span>
+          <span class="value" id="sites-scanned">0</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="current-site">
+      <h2>Current Site Analysis</h2>
+      <div id="site-status">
+        <div class="spinner"></div>
+        <p>Analyzing...</p>
+      </div>
+    </div>
+
+    <div class="recent-threats">
+      <h2>Recent Threats</h2>
+      <div id="threats-list">
+        <!-- Threats will be populated here -->
+      </div>
+    </div>
+
+    <div class="actions">
+      <button id="scan-page" class="button primary">Scan This Page</button>
+      <button id="report-threat" class="button secondary">Report Threat</button>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
