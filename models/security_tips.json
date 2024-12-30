@@ -1,0 +1,55 @@
+{
+  "phishing": [
+    {
+      "title": "Check the Sender",
+      "description": "Verify the email address carefully. Scammers often use addresses that look similar to legitimate ones.",
+      "action_items": [
+        "Look for slight misspellings in email addresses",
+        "Hover over sender name to see actual email address",
+        "Don't trust display names alone"
+      ]
+    },
+    {
+      "title": "Verify Links",
+      "description": "Always check where links lead before clicking them.",
+      "action_items": [
+        "Hover over links to see destination URL",
+        "Look for subtle misspellings in URLs",
+        "Use our URL scanner before clicking"
+      ]
+    }
+  ],
+  "deepfake": [
+    {
+      "title": "Check for Visual Artifacts",
+      "description": "Look for common signs of deepfake manipulation in images and videos.",
+      "action_items": [
+        "Look for unnatural eye movements",
+        "Check for blurry or inconsistent areas",
+        "Watch for audio-visual sync issues"
+      ]
+    }
+  ],
+  "password": [
+    {
+      "title": "Create Strong Passwords",
+      "description": "Use complex passwords to protect your accounts.",
+      "action_items": [
+        "Use at least 12 characters",
+        "Mix letters, numbers, and symbols",
+        "Avoid personal information"
+      ]
+    }
+  ],
+  "general": [
+    {
+      "title": "Keep Software Updated",
+      "description": "Regular updates help protect against known vulnerabilities.",
+      "action_items": [
+        "Enable automatic updates",
+        "Update all devices regularly",
+        "Don't skip security patches"
+      ]
+    }
+  ]
+}
