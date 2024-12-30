@@ -1,265 +1,422 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  Container, 
-  Grid, 
-  Card, 
-  CardContent, 
-  Typography, 
+import React, { useState, useEffect, useCallback } from 'react';
+import {
+  Container,
+  Grid,
+  Card,
+  CardContent,
+  Typography,
   Box,
-  List,
-  ListItem,
-  ListItemText,
   CircularProgress,
-  Alert,
-  Paper,
-  Divider,
-  Tooltip,
-  IconButton,
-  LinearProgress,
-  Button
+  LinearProgress
 } from '@mui/material';
-import SecurityIcon from '@mui/icons-material/Security';
-import WarningIcon from '@mui/icons-material/Warning';
-import InfoIcon from '@mui/icons-material/Info';
-import ShieldIcon from '@mui/icons-material/Shield';
-import BugReportIcon from '@mui/icons-material/BugReport';
-import TimelineIcon from '@mui/icons-material/Timeline';
-import config from '../config';
+import {
+  Shield as ShieldIcon,
+  Warning as WarningIcon,
+  TrendingUp as TrendingUpIcon,
+  Security as SecurityIcon,
+  Error as ErrorIcon
+} from '@mui/icons-material';
+import websocketService from '../services/websocket';
 
-const StatCard = ({ title, value, icon, color, loading, subtitle, progress }) => (
+const MetricCard = ({ icon, title, subtitle, value, color, loading }) => (
   <Card sx={{ 
     height: '100%', 
+    bgcolor: 'rgba(0, 0, 0, 0.2)', 
+    border: '1px solid rgba(255, 255, 255, 0.1)',
+    borderRadius: 2,
     position: 'relative',
-    backgroundColor: 'rgba(0, 0, 0, 0.2)',
-    backdropFilter: 'blur(10px)',
-    border: '1px solid rgba(255, 255, 255, 0.1)'
+    minHeight: '180px'
   }}>
     <CardContent>
-      <Box display="flex" alignItems="center" mb={2}>
-        {icon}
-        <Box ml={1}>
-          <Typography variant="h6" component="div" color="white">
+      <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+        {React.cloneElement(icon, { sx: { color: color, fontSize: 28, mr: 1 } })}
+        <Box>
+          <Typography variant="h6" color="white">
             {title}
           </Typography>
-          {subtitle && (
-            <Typography variant="caption" color="grey.400">
-              {subtitle}
-            </Typography>
-          )}
+          <Typography variant="body2" color="text.secondary">
+            {subtitle}
+          </Typography>
         </Box>
       </Box>
-      <Typography variant="h3" component="div" color={color} sx={{ mb: 1 }}>
-        {loading ? <CircularProgress size={30} /> : value}
-      </Typography>
-      {progress !== undefined && (
-        <Box sx={{ width: '100%', mt: 2 }}>
-          <LinearProgress 
-            variant="determinate" 
-            value={progress} 
-            color={color}
+      {loading ? (
+        <Box sx={{ 
+          display: 'flex', 
+          justifyContent: 'center', 
+          alignItems: 'center',
+          height: '100px'
+        }}>
+          <CircularProgress 
+            size={40}
             sx={{ 
-              height: 8, 
+              color: color,
+              '& .MuiCircularProgress-circle': {
+                strokeLinecap: 'round',
+              }
+            }} 
+          />
+        </Box>
+      ) : (
+        <Box sx={{ mt: 4, textAlign: 'center' }}>
+          <LinearProgress
+            variant="determinate"
+            value={value}
+            sx={{
+              height: 8,
               borderRadius: 4,
               backgroundColor: 'rgba(255, 255, 255, 0.1)',
+              mb: 2,
               '& .MuiLinearProgress-bar': {
-                borderRadius: 4
-              }
+                backgroundColor: color,
+                borderRadius: 4,
+              },
             }}
           />
+          <Typography variant="h2" color="white" sx={{ fontWeight: 'bold' }}>
+            {value}
+          </Typography>
         </Box>
       )}
     </CardContent>
   </Card>
 );
 
-const DetailCard = ({ title, items, icon, loading }) => (
-  <Paper sx={{ p: 2, height: '100%', backgroundColor: 'rgba(0, 0, 0, 0.2)' }}>
-    <Box display="flex" alignItems="center" mb={2}>
-      {icon}
-      <Typography variant="h6" ml={1} color="white">
-        {title}
-      </Typography>
-    </Box>
-    {loading ? (
-      <CircularProgress />
-    ) : items && items.length > 0 ? (
-      <List>
-        {items.map((item, index) => (
-          <React.Fragment key={index}>
-            <ListItem>
-              <ListItemText
-                primary={
-                  <Typography variant="subtitle1" color="white">
-                    {item.title || item.type}
-                  </Typography>
-                }
-                secondary={
-                  <Box>
-                    <Typography variant="body2" color="grey.400">
-                      {item.description}
-                    </Typography>
-                    <Typography variant="caption" color="grey.500">
-                      Last updated: {new Date(item.timestamp).toLocaleString()}
-                    </Typography>
-                    {item.severity && (
-                      <Box 
-                        component="span" 
-                        sx={{ 
-                          ml: 1,
-                          px: 1,
-                          py: 0.5,
-                          borderRadius: 1,
-                          backgroundColor: 
-                            item.severity === 'High' ? 'error.dark' :
-                            item.severity === 'Medium' ? 'warning.dark' :
-                            'success.dark',
-                          color: 'white',
-                          fontSize: '0.75rem'
-                        }}
-                      >
-                        {item.severity}
-                      </Box>
-                    )}
-                  </Box>
-                }
-              />
-            </ListItem>
-            {index < items.length - 1 && <Divider sx={{ borderColor: 'grey.800' }} />}
-          </React.Fragment>
-        ))}
-      </List>
-    ) : (
-      <Typography color="grey.400">No data available</Typography>
-    )}
-  </Paper>
+const StatusSection = ({ title, icon, loading, children }) => (
+  <Card sx={{ 
+    height: '100%', 
+    bgcolor: 'rgba(0, 0, 0, 0.2)', 
+    border: '1px solid rgba(255, 255, 255, 0.1)',
+    borderRadius: 2,
+    position: 'relative',
+    minHeight: '300px'
+  }}>
+    <CardContent>
+      <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+        {React.cloneElement(icon, { sx: { fontSize: 24, mr: 1 } })}
+        <Typography variant="h6" color="white">
+          {title}
+        </Typography>
+      </Box>
+      {loading ? (
+        <Box sx={{ 
+          display: 'flex', 
+          justifyContent: 'center', 
+          alignItems: 'center',
+          height: '200px'
+        }}>
+          <CircularProgress 
+            size={40}
+            sx={{ 
+              color: '#2196f3',
+              '& .MuiCircularProgress-circle': {
+                strokeLinecap: 'round',
+              }
+            }} 
+          />
+        </Box>
+      ) : (
+        children
+      )}
+    </CardContent>
+  </Card>
 );
 
 const Dashboard = () => {
-  const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [data, setData] = useState({
+    threatsBlocked: 0,
+    activeThreats: 0,
+    protectionScore: 0,
+    systemStatus: [],
+    recentThreats: []
+  });
 
-  const fetchDashboardStats = async () => {
+  const handleWebSocketMessage = useCallback((message) => {
+    if (message.type === 'metrics') {
+      setData(prevData => ({
+        ...prevData,
+        ...message.data
+      }));
+      setLoading(false);
+    }
+  }, []);
+
+  const fetchInitialData = useCallback(async () => {
     try {
-      const response = await fetch(`${config.API_URL}/dashboard/stats`);
-      if (!response.ok) {
-        throw new Error('Failed to fetch dashboard statistics');
-      }
-      const data = await response.json();
-      setStats(data);
-      setError(null);
-    } catch (err) {
-      setError(err.message);
+      setLoading(true);
+      // Use mock data for initial load
+      const mockData = {
+        threatsBlocked: Math.floor(Math.random() * 100),
+        activeThreats: Math.floor(Math.random() * 20),
+        protectionScore: Math.floor(Math.random() * (100 - 70) + 70),
+        systemStatus: [
+          { 
+            component: 'Firewall', 
+            status: 'healthy', 
+            message: 'Operating normally', 
+            details: {
+              'Uptime': '24 hours',
+              'Memory Usage': '50%',
+              'CPU Usage': '20%'
+            } 
+          },
+          { 
+            component: 'Antivirus', 
+            status: 'healthy', 
+            message: 'Up to date', 
+            details: {
+              'Last Scan': '1 hour ago',
+              'Virus Definitions': 'Updated',
+              'Threats Detected': '0'
+            } 
+          },
+          { 
+            component: 'Network Monitor', 
+            status: 'warning', 
+            message: 'High traffic detected', 
+            details: {
+              'Traffic Volume': '1000 MB/s',
+              'Packet Loss': '5%',
+              'Latency': '50 ms'
+            } 
+          }
+        ],
+        recentThreats: [
+          { 
+            type: 'Phishing Attempt', 
+            description: 'Blocked suspicious email', 
+            timestamp: new Date().toISOString(), 
+            severity: 'High', 
+            details: {
+              'Source IP': '192.168.1.100',
+              'Destination IP': '192.168.1.200',
+              'Protocol': 'TCP'
+            } 
+          },
+          { 
+            type: 'Malware', 
+            description: 'Prevented file execution', 
+            timestamp: new Date().toISOString(), 
+            severity: 'Critical', 
+            details: {
+              'File Name': 'malware.exe',
+              'File Hash': 'abc123',
+              'Detection Method': 'Signature-based'
+            } 
+          }
+        ]
+      };
+      setData(mockData);
+    } catch (error) {
+      console.error('Failed to fetch initial data:', error);
     } finally {
       setLoading(false);
     }
-  };
-
-  useEffect(() => {
-    fetchDashboardStats();
-    const interval = setInterval(fetchDashboardStats, 30000); // Refresh every 30 seconds
-    return () => clearInterval(interval);
   }, []);
 
-  // Function to simulate a new threat (for testing)
-  const simulateThreat = async () => {
-    try {
-      await fetch(`${config.API_URL}/simulate/threat`, { method: 'POST' });
-      fetchDashboardStats(); // Refresh stats after simulation
-    } catch (err) {
-      console.error('Error simulating threat:', err);
+  useEffect(() => {
+    fetchInitialData();
+    const unsubscribe = websocketService.subscribe(handleWebSocketMessage);
+    return () => unsubscribe();
+  }, [fetchInitialData, handleWebSocketMessage]);
+
+  const getStatusIcon = useCallback((status) => {
+    switch (status) {
+      case 'healthy':
+        return <SecurityIcon sx={{ color: '#4caf50' }} />;
+      case 'warning':
+        return <WarningIcon sx={{ color: '#ff9800' }} />;
+      default:
+        return <ErrorIcon sx={{ color: '#f50057' }} />;
     }
-  };
+  }, []);
 
   return (
     <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-      {error && (
-        <Alert 
-          severity="error" 
-          sx={{ mb: 3 }}
-          action={
-            <Tooltip title="Check your network connection and ensure the backend server is running">
-              <IconButton color="inherit" size="small">
-                <InfoIcon />
-              </IconButton>
-            </Tooltip>
-          }
-        >
-          {error}
-        </Alert>
-      )}
-      
       <Grid container spacing={3}>
         <Grid item xs={12} md={4}>
-          <StatCard
+          <MetricCard
+            icon={<ShieldIcon />}
             title="Threats Blocked"
             subtitle="Total threats prevented in last 24 hours"
-            value={stats?.threats_blocked || 0}
-            icon={<ShieldIcon sx={{ color: '#2196f3', fontSize: 40 }} />}
-            color="primary"
+            value={data.threatsBlocked}
+            color="#2196f3"
             loading={loading}
-            progress={75}
           />
         </Grid>
-
         <Grid item xs={12} md={4}>
-          <StatCard
+          <MetricCard
+            icon={<WarningIcon />}
             title="Active Threats"
             subtitle="Current security alerts requiring attention"
-            value={stats?.active_threats || 0}
-            icon={<BugReportIcon sx={{ color: '#f50057', fontSize: 40 }} />}
-            color="error"
+            value={data.activeThreats}
+            color="#f50057"
             loading={loading}
-            progress={15}
           />
+        </Grid>
+        <Grid item xs={12} md={4}>
+          <MetricCard
+            icon={<TrendingUpIcon />}
+            title="Protection Score"
+            subtitle="Overall system security rating"
+            value={data.protectionScore}
+            color="#4caf50"
+            loading={loading}
+          />
+        </Grid>
+
+        <Grid item xs={12} md={8}>
+          <StatusSection 
+            title="System Status" 
+            icon={<SecurityIcon color="primary" />}
+            loading={loading}
+          >
+            <Box sx={{ height: '300px', overflowY: 'auto' }}>
+              {data.systemStatus.map((status, index) => (
+                <Box 
+                  key={index}
+                  sx={{ 
+                    p: 2, 
+                    mb: 1, 
+                    bgcolor: 'rgba(32, 33, 35, 0.5)',
+                    borderRadius: 1,
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: 2
+                  }}
+                >
+                  {getStatusIcon(status.status)}
+                  <Box sx={{ flex: 1 }}>
+                    <Typography color="white" variant="subtitle1">
+                      {status.component}
+                    </Typography>
+                    <Typography color="text.secondary" variant="body2" sx={{ mb: 1 }}>
+                      {status.message}
+                    </Typography>
+                    <Box sx={{ 
+                      bgcolor: 'rgba(0, 0, 0, 0.2)', 
+                      borderRadius: 1, 
+                      p: 1.5,
+                      fontSize: '0.875rem'
+                    }}>
+                      {Object.entries(status.details).map(([key, value]) => (
+                        <Box key={key} sx={{ display: 'flex', mb: 0.5 }}>
+                          <Typography 
+                            color="rgba(255, 255, 255, 0.5)" 
+                            sx={{ minWidth: 120 }}
+                          >
+                            {key.charAt(0).toUpperCase() + key.slice(1)}:
+                          </Typography>
+                          <Typography color="rgba(255, 255, 255, 0.8)">
+                            {value}
+                          </Typography>
+                        </Box>
+                      ))}
+                    </Box>
+                  </Box>
+                </Box>
+              ))}
+            </Box>
+          </StatusSection>
         </Grid>
 
         <Grid item xs={12} md={4}>
-          <StatCard
-            title="Protection Score"
-            subtitle="Overall system security rating"
-            value={stats ? `${stats.protection_score}%` : '100%'}
-            icon={<TimelineIcon sx={{ color: '#4caf50', fontSize: 40 }} />}
-            color="success"
+          <StatusSection 
+            title="Recent Threats" 
+            icon={<ErrorIcon sx={{ color: '#f50057' }} />}
             loading={loading}
-            progress={stats?.protection_score || 100}
-          />
-        </Grid>
-      </Grid>
-
-      <Grid container spacing={3} sx={{ mt: 2 }}>
-        <Grid item xs={12} md={6}>
-          <DetailCard
-            title="System Status"
-            items={stats?.system_status || []}
-            icon={<SecurityIcon sx={{ color: '#2196f3' }} />}
-            loading={loading}
-          />
-        </Grid>
-
-        <Grid item xs={12} md={6}>
-          <DetailCard
-            title="Recent Threats"
-            items={stats?.recent_threats || []}
-            icon={<WarningIcon sx={{ color: '#f50057' }} />}
-            loading={loading}
-          />
-        </Grid>
-      </Grid>
-
-      {/* Debug button - only show in development */}
-      {process.env.NODE_ENV === 'development' && (
-        <Box sx={{ mt: 2 }}>
-          <Button 
-            variant="contained" 
-            color="secondary" 
-            onClick={simulateThreat}
-            startIcon={<BugReportIcon />}
           >
-            Simulate Threat
-          </Button>
-        </Box>
-      )}
+            <Box sx={{ height: '300px', overflowY: 'auto', pr: 1 }}>
+              {data.recentThreats.map((threat, index) => (
+                <Box 
+                  key={index}
+                  sx={{ 
+                    p: 2.5,
+                    mb: 1.5, 
+                    bgcolor: 'rgba(32, 33, 35, 0.5)',
+                    borderRadius: 1,
+                    '&:hover': {
+                      bgcolor: 'rgba(32, 33, 35, 0.7)',
+                    }
+                  }}
+                >
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                    <Typography 
+                      color="white" 
+                      variant="subtitle1" 
+                      sx={{ 
+                        fontWeight: 500,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 1
+                      }}
+                    >
+                      {threat.type}
+                      <Box
+                        sx={{
+                          px: 1,
+                          py: 0.5,
+                          borderRadius: 1,
+                          fontSize: '0.75rem',
+                          bgcolor: threat.severity === 'Critical' ? 'error.dark' : 
+                                  threat.severity === 'High' ? 'warning.dark' : 'info.dark'
+                        }}
+                      >
+                        {threat.severity}
+                      </Box>
+                    </Typography>
+                  </Box>
+                  <Typography 
+                    color="rgba(255, 255, 255, 0.7)" 
+                    variant="body2"
+                    sx={{ mb: 1 }}
+                  >
+                    {threat.description}
+                  </Typography>
+                  <Box sx={{ 
+                    bgcolor: 'rgba(0, 0, 0, 0.2)', 
+                    borderRadius: 1, 
+                    p: 1.5, 
+                    mb: 1.5,
+                    fontSize: '0.875rem'
+                  }}>
+                    {Object.entries(threat.details).map(([key, value]) => (
+                      <Box key={key} sx={{ display: 'flex', mb: 0.5 }}>
+                        <Typography 
+                          color="rgba(255, 255, 255, 0.5)" 
+                          sx={{ minWidth: 100 }}
+                        >
+                          {key.charAt(0).toUpperCase() + key.slice(1)}:
+                        </Typography>
+                        <Typography color="rgba(255, 255, 255, 0.8)">
+                          {value}
+                        </Typography>
+                      </Box>
+                    ))}
+                  </Box>
+                  <Typography 
+                    color="rgba(255, 255, 255, 0.5)" 
+                    variant="caption" 
+                    sx={{ 
+                      display: 'block',
+                      fontSize: '0.75rem'
+                    }}
+                  >
+                    {new Date(threat.timestamp).toLocaleString('en-US', {
+                      month: 'numeric',
+                      day: 'numeric',
+                      year: 'numeric',
+                      hour: 'numeric',
+                      minute: 'numeric',
+                      hour12: true
+                    })}
+                  </Typography>
+                </Box>
+              ))}
+            </Box>
+          </StatusSection>
+        </Grid>
+      </Grid>
     </Container>
   );
 };

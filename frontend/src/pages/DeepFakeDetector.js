@@ -9,134 +9,105 @@ import {
   CircularProgress,
   Alert,
 } from '@mui/material';
-import CloudUploadIcon from '@mui/icons-material/CloudUpload';
+import { CloudUpload as CloudUploadIcon } from '@mui/icons-material';
+import config from '../config';
 
 const DeepFakeDetector = () => {
-  const [file, setFile] = useState(null);
-  const [preview, setPreview] = useState(null);
+  const [selectedFile, setSelectedFile] = useState(null);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
+  const [error, setError] = useState(null);
 
-  const handleFileChange = (event) => {
-    const selectedFile = event.target.files[0];
-    if (selectedFile) {
-      setFile(selectedFile);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setPreview(reader.result);
-      };
-      reader.readAsDataURL(selectedFile);
+  const handleFileSelect = (event) => {
+    const file = event.target.files[0];
+    if (file && (file.type.startsWith('image/') || file.type.startsWith('video/'))) {
+      setSelectedFile(file);
+      setError(null);
+    } else {
+      setError('Please select a valid image or video file');
+      setSelectedFile(null);
     }
   };
 
-  const handleSubmit = async () => {
-    if (!file) return;
+  const handleAnalyze = async () => {
+    if (!selectedFile) {
+      setError('Please select a file to analyze');
+      return;
+    }
 
     setLoading(true);
+    setError(null);
+    setResult(null);
+
     const formData = new FormData();
-    formData.append('file', file);
+    formData.append('file', selectedFile);
 
     try {
-      const response = await fetch('http://localhost:8000/analyze/media', {
+      const response = await fetch(`${config.API_URL}/analyze/media`, {
         method: 'POST',
         body: formData,
       });
 
+      if (!response.ok) {
+        throw new Error('Failed to analyze media');
+      }
+
       const data = await response.json();
       setResult(data);
-    } catch (error) {
-      setResult({
-        error: 'Failed to analyze media. Please try again.',
-      });
+    } catch (err) {
+      setError(err.message || 'Failed to analyze media. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <Container maxWidth="md" sx={{ mt: 4, mb: 4 }}>
-      <Typography variant="h4" component="h1" gutterBottom>
+    <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+      <Typography variant="h4" gutterBottom color="white">
         Deepfake Detection
       </Typography>
 
-      <Card sx={{ mb: 4 }}>
+      <Card sx={{ bgcolor: 'rgba(0, 0, 0, 0.2)', mb: 3 }}>
         <CardContent>
-          <Typography variant="body1" gutterBottom>
-            Upload an image or video to check if it's authentic or AI-generated.
-          </Typography>
-
-          <Box
-            sx={{
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              gap: 2,
-              mt: 2,
-            }}
-          >
-            <Button
-              variant="outlined"
-              component="label"
-              startIcon={<CloudUploadIcon />}
-            >
-              Upload Media
-              <input
-                type="file"
-                hidden
-                accept="image/*,video/*"
-                onChange={handleFileChange}
-              />
-            </Button>
-
-            {preview && (
-              <Box 
-                sx={{ 
-                  mt: 2, 
-                  maxWidth: '100%',
-                  display: 'flex',
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                  minHeight: '200px',
-                  border: '2px dashed #ccc',
-                  borderRadius: '8px',
-                  padding: '16px'
+          <Box sx={{ textAlign: 'center', py: 3 }}>
+            <input
+              accept="image/*,video/*"
+              style={{ display: 'none' }}
+              id="media-file"
+              type="file"
+              onChange={handleFileSelect}
+              disabled={loading}
+            />
+            <label htmlFor="media-file">
+              <Button
+                variant="outlined"
+                component="span"
+                startIcon={<CloudUploadIcon />}
+                disabled={loading}
+                sx={{
+                  borderColor: 'rgba(255, 255, 255, 0.23)',
+                  color: 'white',
+                  '&:hover': {
+                    borderColor: 'white',
+                  },
                 }}
               >
-                {file?.type.startsWith('image/') ? (
-                  <img
-                    src={preview}
-                    alt="Preview"
-                    style={{ 
-                      maxWidth: '100%', 
-                      maxHeight: '400px',
-                      objectFit: 'contain'
-                    }}
-                  />
-                ) : file?.type.startsWith('video/') ? (
-                  <video
-                    controls
-                    style={{ 
-                      maxWidth: '100%', 
-                      maxHeight: '400px'
-                    }}
-                  >
-                    <source src={preview} type={file.type} />
-                    Your browser does not support the video tag.
-                  </video>
-                ) : (
-                  <Typography color="error">
-                    Unsupported file type. Please upload an image or video.
-                  </Typography>
-                )}
-              </Box>
+                Upload Media File
+              </Button>
+            </label>
+            {selectedFile && (
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                Selected: {selectedFile.name}
+              </Typography>
             )}
+          </Box>
 
+          <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
             <Button
               variant="contained"
-              color="primary"
-              onClick={handleSubmit}
-              disabled={!file || loading}
-              sx={{ mt: 2 }}
+              onClick={handleAnalyze}
+              disabled={!selectedFile || loading}
+              sx={{ minWidth: 200 }}
             >
               {loading ? (
                 <CircularProgress size={24} color="inherit" />
@@ -148,44 +119,34 @@ const DeepFakeDetector = () => {
         </CardContent>
       </Card>
 
+      {error && (
+        <Alert severity="error" sx={{ mb: 3 }}>
+          {error}
+        </Alert>
+      )}
+
       {result && (
-        <Box sx={{ mt: 3 }}>
-          <Alert 
-            severity={result.is_fake ? "error" : "success"}
-            sx={{ mb: 2 }}
-          >
-            {result.is_fake 
-              ? "This media appears to be AI-generated" 
-              : "This media appears to be authentic"}
-          </Alert>
-          
-          <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
-                Analysis Results
+        <Card sx={{ bgcolor: 'rgba(0, 0, 0, 0.2)' }}>
+          <CardContent>
+            <Typography variant="h6" color="white" gutterBottom>
+              Analysis Results
+            </Typography>
+            
+            <Box sx={{ mt: 2 }}>
+              <Typography color="white" gutterBottom>
+                Confidence Score: {result.confidence_score}%
               </Typography>
-              <Typography>
-                Confidence: {(result.confidence * 100).toFixed(1)}%
+              <Typography color="white" gutterBottom>
+                Classification: {result.is_deepfake ? 'Potential Deepfake' : 'Likely Authentic'}
               </Typography>
-              {result.analysis_details && (
-                <>
-                  <Typography variant="subtitle1" sx={{ mt: 2 }}>
-                    Technical Details:
-                  </Typography>
-                  <ul>
-                    {Object.entries(result.analysis_details).map(([key, value]) => (
-                      <li key={key}>
-                        {key.split('_').map(word => 
-                          word.charAt(0).toUpperCase() + word.slice(1)
-                        ).join(' ')}: {typeof value === 'number' ? value.toFixed(2) : value}
-                      </li>
-                    ))}
-                  </ul>
-                </>
+              {result.detection_details && (
+                <Typography color="text.secondary">
+                  {result.detection_details}
+                </Typography>
               )}
-            </CardContent>
-          </Card>
-        </Box>
+            </Box>
+          </CardContent>
+        </Card>
       )}
     </Container>
   );

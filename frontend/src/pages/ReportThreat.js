@@ -12,32 +12,63 @@ import {
   MenuItem,
   Alert,
   Box,
+  CircularProgress,
+  Grid,
 } from '@mui/material';
-import ReportIcon from '@mui/icons-material/Report';
+import {
+  Send as SendIcon,
+} from '@mui/icons-material';
+import config from '../config';
 
 const ReportThreat = () => {
   const [formData, setFormData] = useState({
     url: '',
     type: '',
     description: '',
+    evidence: '',
+    impact: 'low',
   });
+
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState(null);
+  const [success, setSuccess] = useState(false);
+  const [error, setError] = useState(null);
+  const [message, setMessage] = useState(null);
+
+  const threatTypes = [
+    'Phishing',
+    'Malware',
+    'Scam',
+    'Deepfake',
+    'Impersonation',
+    'Cryptocurrency Fraud',
+    'Other',
+  ];
+
+  const impactLevels = [
+    { value: 'low', label: 'Low' },
+    { value: 'medium', label: 'Medium' },
+    { value: 'high', label: 'High' },
+    { value: 'critical', label: 'Critical' },
+  ];
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({
+    setFormData(prev => ({
       ...prev,
-      [name]: value,
+      [name]: value
     }));
+    setError(null);
+    setSuccess(false);
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSubmit = async (event) => {
+    event.preventDefault();
     setLoading(true);
+    setError(null);
+    setSuccess(false);
 
     try {
-      const response = await fetch('http://localhost:8000/report/threat', {
+      const response = await fetch(`${config.apiUrl}${config.endpoints.report}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -45,110 +76,175 @@ const ReportThreat = () => {
         body: JSON.stringify(formData),
       });
 
-      const data = await response.json();
-      setResult({
-        success: true,
-        message: `Thank you for your report! Report ID: ${data.report_id}`,
-      });
-      setFormData({ url: '', type: '', description: '' });
+      if (response.ok) {
+        setFormData({
+          url: '',
+          type: '',
+          description: '',
+          evidence: '',
+          impact: 'low',
+        });
+        setMessage({ text: 'Threat reported successfully!', type: 'success' });
+      } else {
+        setMessage({ text: 'Failed to report threat. Please try again.', type: 'error' });
+      }
     } catch (error) {
-      setResult({
-        success: false,
-        message: 'Failed to submit report. Please try again.',
-      });
+      console.error('Error reporting threat:', error);
+      setMessage({ text: 'An error occurred while reporting the threat.', type: 'error' });
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <Container maxWidth="md" sx={{ mt: 4, mb: 4 }}>
-      <Typography variant="h4" component="h1" gutterBottom>
+    <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+      <Typography variant="h4" gutterBottom color="white">
         Report a Threat
       </Typography>
 
-      <Card sx={{ mb: 4 }}>
+      <Card sx={{ bgcolor: 'rgba(0, 0, 0, 0.2)', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
         <CardContent>
-          <Typography variant="body1" paragraph>
-            Help protect our community by reporting suspicious activities,
-            phishing attempts, or potential cyber threats.
-          </Typography>
+          <Box component="form" onSubmit={handleSubmit} sx={{ mt: 2 }}>
+            <Grid container spacing={3}>
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  label="URL or Source"
+                  name="url"
+                  value={formData.url}
+                  onChange={handleChange}
+                  variant="outlined"
+                  required
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      color: 'white',
+                      '& fieldset': {
+                        borderColor: 'rgba(255, 255, 255, 0.23)',
+                      },
+                    },
+                    '& .MuiInputLabel-root': {
+                      color: 'rgba(255, 255, 255, 0.7)',
+                    },
+                  }}
+                />
+              </Grid>
 
-          <form onSubmit={handleSubmit}>
-            <TextField
-              fullWidth
-              label="URL or Source"
-              name="url"
-              value={formData.url}
-              onChange={handleChange}
-              margin="normal"
-              helperText="Enter the suspicious URL or source of the threat"
-            />
+              <Grid item xs={12} sm={6}>
+                <FormControl fullWidth required>
+                  <InputLabel sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>
+                    Threat Type
+                  </InputLabel>
+                  <Select
+                    name="type"
+                    value={formData.type}
+                    onChange={handleChange}
+                    sx={{
+                      color: 'white',
+                      '& .MuiOutlinedInput-notchedOutline': {
+                        borderColor: 'rgba(255, 255, 255, 0.23)',
+                      },
+                    }}
+                  >
+                    {threatTypes.map((type) => (
+                      <MenuItem key={type} value={type.toLowerCase()}>
+                        {type}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Grid>
 
-            <FormControl fullWidth margin="normal">
-              <InputLabel>Threat Type</InputLabel>
-              <Select
-                name="type"
-                value={formData.type}
-                onChange={handleChange}
-                label="Threat Type"
-                required
-              >
-                <MenuItem value="phishing">Phishing Attempt</MenuItem>
-                <MenuItem value="malware">Malware</MenuItem>
-                <MenuItem value="scam">Scam</MenuItem>
-                <MenuItem value="deepfake">Deepfake</MenuItem>
-                <MenuItem value="other">Other</MenuItem>
-              </Select>
-            </FormControl>
+              <Grid item xs={12} sm={6}>
+                <FormControl fullWidth required>
+                  <InputLabel sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>
+                    Impact Level
+                  </InputLabel>
+                  <Select
+                    name="impact"
+                    value={formData.impact}
+                    onChange={handleChange}
+                    sx={{
+                      color: 'white',
+                      '& .MuiOutlinedInput-notchedOutline': {
+                        borderColor: 'rgba(255, 255, 255, 0.23)',
+                      },
+                    }}
+                  >
+                    {impactLevels.map((level) => (
+                      <MenuItem key={level.value} value={level.value}>
+                        {level.label}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Grid>
 
-            <TextField
-              fullWidth
-              label="Description"
-              name="description"
-              value={formData.description}
-              onChange={handleChange}
-              margin="normal"
-              multiline
-              rows={4}
-              helperText="Provide details about the threat"
-            />
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  label="Description"
+                  name="description"
+                  value={formData.description}
+                  onChange={handleChange}
+                  multiline
+                  rows={4}
+                  required
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      color: 'white',
+                      '& fieldset': {
+                        borderColor: 'rgba(255, 255, 255, 0.23)',
+                      },
+                    },
+                    '& .MuiInputLabel-root': {
+                      color: 'rgba(255, 255, 255, 0.7)',
+                    },
+                  }}
+                />
+              </Grid>
 
-            <Box sx={{ mt: 3, display: 'flex', justifyContent: 'center' }}>
-              <Button
-                type="submit"
-                variant="contained"
-                size="large"
-                disabled={loading}
-                startIcon={<ReportIcon />}
-              >
-                {loading ? 'Submitting...' : 'Submit Report'}
-              </Button>
-            </Box>
-          </form>
-        </CardContent>
-      </Card>
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  label="Evidence (URLs, screenshots, etc.)"
+                  name="evidence"
+                  value={formData.evidence}
+                  onChange={handleChange}
+                  multiline
+                  rows={2}
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      color: 'white',
+                      '& fieldset': {
+                        borderColor: 'rgba(255, 255, 255, 0.23)',
+                      },
+                    },
+                    '& .MuiInputLabel-root': {
+                      color: 'rgba(255, 255, 255, 0.7)',
+                    },
+                  }}
+                />
+              </Grid>
 
-      {result && (
-        <Alert severity={result.success ? 'success' : 'error'} sx={{ mt: 2 }}>
-          {result.message}
-        </Alert>
-      )}
+              <Grid item xs={12}>
+                <Button
+                  type="submit"
+                  variant="contained"
+                  disabled={loading}
+                  startIcon={loading ? <CircularProgress size={20} /> : <SendIcon />}
+                  sx={{ minWidth: 200 }}
+                >
+                  {loading ? 'Submitting...' : 'Submit Report'}
+                </Button>
+              </Grid>
+            </Grid>
+          </Box>
 
-      <Card sx={{ mt: 4 }}>
-        <CardContent>
-          <Typography variant="h6" gutterBottom>
-            What Happens Next?
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            1. Our AI system will analyze your report
-            <br />
-            2. The threat will be verified by our security team
-            <br />
-            3. If confirmed, it will be added to our threat database
-            <br />
-            4. Other users will be protected from this threat
-          </Typography>
+          {message && (
+            <Alert severity={message.type} sx={{ mt: 3 }}>
+              {message.text}
+            </Alert>
+          )}
         </CardContent>
       </Card>
     </Container>
